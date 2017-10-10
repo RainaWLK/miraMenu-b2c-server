@@ -7,11 +7,11 @@
   "scripts": {
     "transpile": "babel src -d build",
     "test": "mocha --compilers js:babel-core/register --require babel-polyfill --timeout 15000",
-    "deploy": "npm run transpile && SLS_DEBUG=* serverless deploy -v",
+    "deploy": "serverless deploy -v",
     "package": "npm run transpile && serverless package",
     "help": "serverless --help",
     "destroy": "serverless remove",
-    "start": "npm run transpile && SLS_DEBUG=* serverless invoke local --function hello"
+    "start": "serverless invoke local -f branch"
   },
   "author": "Luke <luke.shih@neogeeks.net>",
   "license": "MIT",
@@ -19,11 +19,15 @@
   "devDependencies": {
     "aws-sdk": "^2.128.0",
     "babel-cli": "^6.26.0",
+    "babel-loader": "^7.1.2",
     "babel-preset-env": "^1.6.0",
     "cross-env": "^5.0.0",
     "serverless": "^1.23.0",
     "serverless-offline": "^3.16.0",
-    "serverless-plugin-include-dependencies": "^3.0.0"
+    "serverless-plugin-include-dependencies": "^3.0.0",
+    "serverless-webpack": "^3.1.1",
+    "webpack": "^3.6.0",
+    "webpack-node-externals": "^1.6.0"
   },
   "dependencies": {
     "babel-polyfill": "^6.26.0",

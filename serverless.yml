@@ -18,7 +18,12 @@ service: miraMenu
 # frameworkVersion: "=X.X.X"
 plugins:
   - serverless-plugin-include-dependencies
+  - serverless-webpack
 #  - serverless-offline
+
+custom:
+  webpackIncludeModules: true # enable auto including modules
+
 
 provider:
   name: aws
@@ -28,26 +33,23 @@ provider:
   region: us-east-1
 #  profile: production # The default profile to use with this service
   memorySize: 512 # Overwrite the default memory size. Default is 1024
-  deploymentBucket:
-    name: com.serverless.${self:provider.region}.deploys # Overwrite the default deployment bucket
-    serverSideEncryption: AES256 # when using server-side encryption
   versionFunctions: true # optional, default is true
   stackTags: # Optional CF stack tags
    key: value
-  stackPolicy: # Optional CF stack policy. The example below allows updates to all resources except deleting/replacing EC2 instances (use with caution!)
-    - Effect: Allow
-      Principal: "*"
-      Action: "Update:*"
-      Resource: "*"
-    - Effect: Deny
-      Principal: "*"
+# you can add statements to the Lambda function's IAM Role here
+  iamRoleStatements:
+    - Effect: "Allow"
       Action:
-        - Update:Replace
-        - Update:Delete
-      Condition:
-        StringEquals:
-          ResourceType:
-            - AWS::EC2::Instance
+        - "dynamodb:GetItem"
+        - "dynamodb:ListTables"
+        - "dynamodb:PutItem"
+        - "dynamodb:UpdateItem"
+        - "dynamodb:Query"
+        - "dynamodb:Scan"
+      Resource:
+        Fn::Join:
+          - ""
+          - - "arn:aws:dynamodb:us-east-1:552950262288:table/*"
 
 # you can add packaging information here
 package:
@@ -55,10 +57,79 @@ package:
     - src/**
 
 functions:
-  usersCreate: # A Function
-    handler: restaurants.get
+  get_restaurant: # A Function
+    handler: restaurant_api.get
     events: # The Events that trigger this Function
-      - http: get restaurants/get
+      - http:
+          path: restaurants
+          method: get
+          cors: true
+  get_restaurant_id: # A Function
+    handler: restaurant_api.getByID
+    events:
+      - http:
+          path: restaurants/{restaurant_id}
+          method: get
+          cors: true
+#          authorizer: none
+  get_branch: # A Function
+    handler: branch_api.get
+    events: # The Events that trigger this Function
+      - http:
+          path: restaurants/{restaurant_id}/branches
+          method: get
+          cors: true
+  get_branch_id: # A Function
+    handler: branch_api.getByID
+    events: # The Events that trigger this Function
+      - http:
+          path: restaurants/{restaurant_id}/branches/{branch_id}
+          method: get
+          cors: true
+  get_menu: # A Function
+    handler: menu_api.get
+    events: # The Events that trigger this Function
+      - http:
+          path: restaurants/{restaurant_id}/branches/{branch_id}/menus
+          method: get
+          cors: true
+      - http:
+          path: restaurants/{restaurant_id}/menus
+          method: get
+          cors: true
+  get_menu_id: # A Function
+    handler: menu_api.getByID
+    events: # The Events that trigger this Function
+      - http:
+          path: restaurants/{restaurant_id}/branches/{branch_id}/menus/{menu_id}
+          method: get
+          cors: true
+      - http:
+          path: restaurants/{restaurant_id}/menus/{menu_id}
+          method: get
+          cors: true
+  get_item: # A Function
+    handler: item_api.get
+    events: # The Events that trigger this Function
+      - http:
+          path: restaurants/{restaurant_id}/branches/{branch_id}/items
+          method: get
+          cors: true
+      - http:
+          path: restaurants/{restaurant_id}/items
+          method: get
+          cors: true
+  get_item_id: # A Function
+    handler: item_api.get
+    events: # The Events that trigger this Function
+      - http:
+          path: restaurants/{restaurant_id}/branches/{branch_id}/items/{item_id}
+          method: get
+          cors: true
+      - http:
+          path: restaurants/{restaurant_id}/items/{item_id}
+          method: get
+          cors: true
 
 #    The following are a few example events you can configure
 #    NOTE: Please make sure to change your handler code to work with those events

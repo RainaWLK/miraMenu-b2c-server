@@ -6,7 +6,8 @@ module.exports = {
     restaurant_api: ['./restaurant_api.js'],
     branch_api: ['./branch_api.js'],
     menu_api: ['./menu_api.js'],
-    item_api: ['./item_api.js']
+    item_api: ['./item_api.js'],
+    oauth_handler: ['./oauth_handler.js']
   },
   target: 'node',
   externals: [nodeExternals()],

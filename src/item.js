@@ -120,6 +120,39 @@ class Items {
     return data;
   }
 
+  outputBrief(data, fullID){
+    let outputData = {
+      "id": fullID,
+      "name": data.name,
+      "availability": (data.menu_availability == false)?false:true,
+      "item_hours": data.item_hours,
+      "list_price": data.list_price,
+      "tags": data.tags,
+      "note": data.note,
+      "main_photo_url": this.getMainPhotoUrl(data.photos)
+    };
+    
+    return outputData;
+  }
+
+  getMainPhotoUrl(photos){
+    let main_photo = {};
+    for(let i in photos){
+      main_photo = photos[i];
+      if(photos[i].role == 'main'){
+        break;
+      }
+    }
+
+    if(main_photo.url !== undefined){
+      return main_photo.url;
+    }
+    else{
+      return {};
+    }
+  }
+  
+
   async get() {
     let dbMenusData = await this.getMenusData(true);
     let itemsData = dbMenusData.items;
@@ -134,7 +167,7 @@ class Items {
         let i18n = new I18n.main(itemData, this.idArray);
         itemData = i18n.translate(this.lang);
 
-        let output = this.output(itemData, item_id);
+        let output = this.outputBrief(itemData, item_id);
 
         dataArray.push(output);
     }

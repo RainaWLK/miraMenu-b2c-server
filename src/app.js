@@ -1,34 +1,24 @@
-let rest = require('./rest.js');
+'use strict';
+import 'babel-polyfill'
+let Rest = require('./rest.js');
+let Restaurant_API = require('./apis/restaurant_api');
+let Branch_API = require('./apis/branch_api');
+//let Table_API = require('./apis/table_api');
+let Menu_API = require('./apis/menu_api');
+let Item_API = require('./apis/item_api');
 
-function input(event){
-  let reqData = rest.makeReqData(event);
-  return reqData;
-}
+let api = new Rest.main();
 
-function output(err, result, callback){
-  if(err){
-    if(typeof err.statusCode !== 'undefined'){
-      console.log("output error with status code");
-      const response = {
-        statusCode: err.statusCode,
-        body: err.Error
-      }
-      callback(null, response);
-    }
-    else{
-      console.log("output error with no status code");
-      callback(err);
-    }
-  }
-  else{
-    const response = {
-      statusCode: 200,
-      body: JSON.stringify(result),
-    };
-  
-    // Use this code if you don't use the http event with the LAMBDA-PROXY integration
-    callback(null, response);
-  }
-}
-exports.input = input;
-exports.output = output;
+Restaurant_API.go(api);
+Branch_API.go(api);
+//Table_API.go(api);
+Menu_API.go(api);
+Item_API.go(api);
+
+
+//for unittest
+//let utils = require('./utils');
+//utils.unittest();
+
+
+module.exports = api.app;

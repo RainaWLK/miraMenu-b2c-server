@@ -105,12 +105,33 @@ class Menus {
     try{
       let dbMenusData = await this.getMenusData(mix);
       let menuData = dbMenusData.menus[this.menu_fullID];
+      let itemsData = dbMenusData.items;      
 
       if(typeof menuData == 'undefined'){
         let err = new Error("not found");
         err.statusCode = 404;
         throw err;
       }
+
+      menuData.menu_section = {
+        "name": "main menu",
+        "items": menuData.items.map(item_id => {
+          let itemData = itemsData[item_id];
+          let itemBrief = {
+            "id": item_id,
+            "name": itemData.name,
+            "availability": (itemData.menu_availability == false)?false:true,
+            "item_hours": itemData.item_hours,
+            "list_price": itemData.list_price,
+            "tags": itemData.tags,
+            "note": itemData.note,
+            "main_photo_url": this.getMainPhotoUrl(itemData.photos)
+          };
+          return itemBrief;
+        })
+      };
+      delete menuData.items;
+
       return menuData;
     }
     catch(err){
@@ -123,13 +144,53 @@ class Menus {
     data.photos = Utils.objToArray(data.photos);
     delete data.menuControl;
 
+    //calibration
+    data.category = data.menu_cat;
+    delete data.menu_cat;
+    data.desc = data.menu_desc;
+    delete data.menu_desc;
+    data.availability = (data.menu_availability == false)?false:true;
+    delete data.menu_availability;
+
     return data;
+  }
+  
+  outputBrief(data, fullID){
+    let outputData = {
+      "id": fullID,
+      "name": data.name,
+      "category": data.menu_cat,
+      "availability": (data.menu_availability == false)?false:true,
+      "menu_hours": data.menu_hours,
+      "menu_section": data.menu_section,
+      "main_photo_url": this.getMainPhotoUrl(data.photos)
+    };
+     
+    return outputData;
+  }
+
+  getMainPhotoUrl(photos){
+    let main_photo = {};
+    for(let i in photos){
+      main_photo = photos[i];
+      if(photos[i].role == 'main'){
+        break;
+      }
+    }
+
+    if(main_photo.url !== undefined){
+      return main_photo.url;
+    }
+    else{
+      return {};
+    }
   }
 
 
   async get() {
     let dbMenusData = await this.getMenusData(true);
     let menusData = dbMenusData.menus;
+    let itemsData = dbMenusData.items;
 
     //output
     let dataArray = [];
@@ -137,22 +198,38 @@ class Menus {
     for(let menu_id in menusData) {
       let menuData = menusData[menu_id];
 
+      //item brief
+      menuData.menu_section = {
+        "name": "main menu",
+        "items": menuData.items.map(item_id => {
+          let itemData = itemsData[item_id];
+          let itemBrief = {
+            "id": item_id,
+            "name": itemData.name,
+            "availability": (itemData.menu_availability == false)?false:true,
+            "item_hours": itemData.item_hours,
+            "list_price": itemData.list_price,
+            "tags": itemData.tags,
+            "note": itemData.note,
+            "main_photo_url": this.getMainPhotoUrl(itemData.photos)
+          };
+          return itemBrief;
+        })
+      };
+
       //translate
       let i18n = new I18n.main(menuData, this.idArray);
       menuData = i18n.translate(this.lang);
 
-      let output = this.output(menuData, menu_id);
+      let output = this.outputBrief(menuData, menu_id);
 
       dataArray.push(output);
     }
-
-
-
     //if empty
     if(dataArray.length == 0){
-        let err = new Error("not found");
-        err.statusCode = 404;
-        throw err;
+      let err = new Error("not found");
+      err.statusCode = 404;
+      throw err;
     }
     
     return JSONAPI.makeJSONAPI(TYPE_NAME, dataArray);

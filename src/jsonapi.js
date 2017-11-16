@@ -1,14 +1,14 @@
-let _ = require('lodash');
+//let _ = require('lodash');
 
-class dataObj {
+/*class dataObj {
     constructor(id) {
     	this.id = id;
-        this.type = "";
-        this.attributes = {};
-        this.i18n = [];
-        this.resources = [];
-    	//this.relationships = {};
-        //this.links = {};
+      //this.type = "";
+      //this.attributes = {};
+      this.i18n = [];
+      this.resources = [];
+      //this.relationships = {};
+      //this.links = {};
     }
 }
 
@@ -102,8 +102,51 @@ function parseJSONAPI(orgData) {
 
     return dbData;
 }
+*/
 
+function setUndefined(orgData){
+  for(let i in orgData){
+    if(orgData[i] === undefined){
+      orgData[i] = "";
+    }
+    else if(Array.isArray(orgData[i])){
+      orgData[i] = orgData[i].map(element => {
+        return setUndefined(element);
+      });
+    }
+    else if(typeof orgData[i] === 'object'){
+      orgData[i] = setUndefined(orgData[i]);
+    }
+  }
+  return orgData;
+}
+
+function makeJSONAPI(path, dataList) {
+  let result = {};
+
+  let makeData = (orgData) => {
+    delete orgData.i18n;
+    delete orgData.resources;
+    delete orgData.language;
+
+    return setUndefined(orgData);
+  }
+
+  if(Array.isArray(dataList)) {
+    result = [];
+
+    for(let i in dataList) {
+      let data = dataList[i];
+      let obj = makeData(data);
+      result.push(obj); 
+    }
+  }
+  else {
+    result = makeData(dataList);
+  }
+
+  return result;
+}
 
 
 exports.makeJSONAPI = makeJSONAPI;
-exports.parseJSONAPI = parseJSONAPI;

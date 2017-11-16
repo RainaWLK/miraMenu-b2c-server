@@ -1,0 +1,11 @@
+{
+  "lambda": {
+    "role": "MiraMenuB2C-executor",
+    "name": "MiraMenuB2C",
+    "region": "us-east-1"
+  },
+  "api": {
+    "id": "oji5jlxta0",
+    "module": "build/app"
+  }
+}

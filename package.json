@@ -1,40 +1,58 @@
 {
-  "name": "miraMenu",
+  "name": "MiraMenu",
   "version": "1.0.0",
+  "files": [
+    "build"
+  ],
   "description": "B2C backend",
-  "main": "app.js",
+  "main": "build/app.js",
   "repository": "https://git-codecommit.us-east-1.amazonaws.com/v1/repos/miraMenu",
   "scripts": {
     "transpile": "babel src -d build",
     "test": "mocha --compilers js:babel-core/register --require babel-polyfill --timeout 15000",
-    "deploy": "serverless deploy -v",
-    "package": "npm run transpile && serverless package",
-    "help": "serverless --help",
-    "destroy": "serverless remove",
-    "start": "serverless invoke local -f branch"
+    "serverless_deploy": "serverless deploy -v",
+    "serverless_package": "npm run transpile && serverless package",
+    "serverless_destroy": "serverless remove",
+    "create": "npm run transpile && claudia create --name MiraMenuB2C --region us-east-1 --api-module build/app --version dev --no-optional-dependencies",
+    "release": "claudia set-version --version v1",
+    "deploy": "npm run transpile && claudia update --version dev --set-env NODE_ENV=production --no-optional-dependencies",
+    "start": "npm run transpile && cross-env NODE_ENV=development node build/app.js",
+    "help": "claudia --help",
+    "destroy": "claudia destroy"
   },
   "author": "Luke <luke.shih@neogeeks.net>",
   "license": "MIT",
   "private": true,
   "devDependencies": {
-    "aws-sdk": "^2.128.0",
     "babel-cli": "^6.26.0",
     "babel-loader": "^7.1.2",
     "babel-preset-env": "^1.6.0",
-    "cross-env": "^5.0.0",
+    "body-parser": "^1.18.2",
+    "chai": "^4.1.2",
+    "chai-ajv-json-schema": "^1.0.0",
+    "claudia": "^2.14.2",
+    "cors": "^2.8.4",
+    "cross-env": "^5.1.1",
+    "express": "^4.16.2",
+    "mocha": "^4.0.1",
     "serverless": "^1.23.0",
     "serverless-offline": "^3.16.0",
     "serverless-plugin-include-dependencies": "^3.0.0",
     "serverless-webpack": "^3.1.1",
+    "supertest": "^3.0.0",
     "webpack": "^3.6.0",
     "webpack-node-externals": "^1.6.0"
   },
   "dependencies": {
     "babel-polyfill": "^6.26.0",
+    "claudia-api-builder": "^2.5.1",
     "lodash": "^4.17.4",
     "query-string": "^5.0.0",
     "request": "^2.83.0",
     "request-promise": "^4.2.2",
     "request-promise-native": "^1.0.5"
+  },
+  "optionalDependencies": {
+    "aws-sdk": "^2.128.0"
   }
 }

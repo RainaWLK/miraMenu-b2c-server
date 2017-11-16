@@ -39,11 +39,47 @@ class Branches {
     }
 
     output(data, fullID){
-        data.id = fullID;
-        data.photos = Utils.objToArray(data.photos);
-        delete data.branchControl;
+      data.id = fullID;
+      data.photos = Utils.objToArray(data.photos);
+      delete data.branchControl;
+  
+      data.geolocation = {};
+      data.geolocation.zipcode = data.location.zipcode;
+      data.address = data.location.address;
+      data.tel = data.location.tel;
+      delete data.location;
+  
+      return data;
+    }
     
-        return data;
+    outputBrief(data, fullID){
+      let outputData = {
+        "id": fullID,
+        "name": data.name,
+        "category": data.category,
+        "geolocation": {
+            "zipcode": data.location.zipcode
+        },
+        "address": data.location.address,
+        "tel": data.location.tel,
+        "availability": (data.availability == false)?false:true,
+        "branch_hours": data.branch_hours,
+        "main_photo_url": {}
+      };
+  
+      let main_photo = {};
+      for(let i in data.photos){
+        main_photo = data.photos[i];
+        if(data.photos[i].role == 'main'){
+          break;
+        }
+      }
+  
+      if(main_photo.url !== undefined){
+        outputData.main_photo_url = main_photo.url;
+      }
+        
+      return outputData;
     }
 
     async get() {
@@ -64,7 +100,7 @@ class Branches {
                 ReturnConsumedCapacity: "TOTAL"
             };
             let dataArray = await db.scanDataByFilter(params);
-            dataArray.map(branchData => {
+            dataArray = dataArray.map(branchData => {
               //table
               let tableArray = [];
               for(let table_id in branchData.tables){
@@ -76,7 +112,7 @@ class Branches {
               let i18n = new I18n.main(branchData, this.idArray);
               branchData = i18n.translate(this.lang);
 
-              return this.output(branchData, branchData.id);
+              return this.outputBrief(branchData, branchData.id);
             });
 
             //if empty

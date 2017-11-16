@@ -14,115 +14,159 @@ const TYPE_NAME = "restaurants";
 
 
 class Restaurant {
-    constructor(reqData){
-        this.reqData = reqData;
+  constructor(reqData){
+      this.reqData = reqData;
 
-        //id array
-        this.restaurant_fullID = "";
-        if(typeof this.reqData.params.restaurant_id === 'string'){
-            this.restaurant_fullID = this.reqData.params.restaurant_id;
-        }
-        this.idArray = Utils.parseID(this.restaurant_fullID);
+      //id array
+      this.restaurant_fullID = "";
+      if(typeof this.reqData.params.restaurant_id === 'string'){
+          this.restaurant_fullID = this.reqData.params.restaurant_id;
+      }
+      this.idArray = Utils.parseID(this.restaurant_fullID);
 
-        //lang
-        if(typeof reqData.queryString.lang == 'string'){
-            this.lang = reqData.queryString.lang;
-        }
+      //lang
+      if(typeof reqData.queryString.lang == 'string'){
+          this.lang = reqData.queryString.lang;
+      }
+  }
+
+  output(data, fullID){
+    data.id = fullID;
+    data.photos = Utils.objToArray(data.photos);
+    delete data.restaurantControl;
+
+    data.geolocation = {};
+    data.geolocation.zipcode = data.location.zipcode;
+    data.address = data.location.address;
+    data.tel = data.location.tel;
+    delete data.location;
+
+    return data;
+  }
+
+  outputBrief(data, fullID){
+    let outputData = {
+      "id": "",
+      "name": "",
+      "category": "",
+      "geolocation": {},
+      "address": "",
+      "tel": "",
+      "availability": "",
+      "main_photo_url": {}
+    };
+
+    outputData.id = fullID;
+    outputData.name = data.name;
+    outputData.category = data.category;
+    outputData.geolocation.zipcode = data.location.zipcode;
+    outputData.address = data.location.address;
+    outputData.tel = data.location.tel;
+    outputData.availability = (data.availability == false)?false:true;
+
+    let main_photo = {};
+    for(let i in data.photos){
+      main_photo = data.photos[i];
+      if(data.photos[i].role == 'main'){
+        break;
+      }
     }
 
-    output(data, fullID){
-        data.id = fullID;
-        data.photos = Utils.objToArray(data.photos);
-        delete data.restaurantControl;
-    
-        return data;
+    if(main_photo.url !== undefined){
+      outputData.main_photo_url = main_photo.url;
     }
+      
+    return outputData;
+  }
 
-    /*async get() {
-        //let identityId = this.reqData.userinfo.cognitoIdentityId;
+  async get() {
+    //let identityId = this.reqData.userinfo.cognitoIdentityId;
 
-        try {
-            //scan table Restaurant (bug: must merged into dynamodb.js)
-            //let restaurant_id = this.reqData.params.restaurant_id.toString();
-            console.log("restaurant get!!");
-            var params = {
-                TableName: TABLE_NAME,
-                //ProjectionExpression: "#yr, title, info.rating",
-                //FilterExpression: "#a1.#a2 = :b",
-                ExpressionAttributeNames: {
-                    "#a1": "restaurantControl",
-                    "#a2": "owner"
-                },
-                //ExpressionAttributeValues: {
-                //     ":b": identityId 
-                //},
-                ReturnConsumedCapacity: "TOTAL"
-            };
-            let dataArray = await db.scanDataByFilter(params);
-            console.log(dataArray);
-            
-            dataArray.map(restaurantData => {
-                //translate
-                let i18n = new I18n.main(restaurantData, this.idArray);
-                restaurantData = i18n.translate(this.lang);
+    try {
+      //scan table Restaurant (bug: must merged into dynamodb.js)
 
-                return this.output(restaurantData, restaurantData.id);
-            });
+      let params = {
+        TableName: TABLE_NAME,
+        ReturnConsumedCapacity: "TOTAL"
+      };
 
-            //if empty
-            if(dataArray.length == 0){
-                let err = new Error("not found");
-                err.statusCode = 404;
-                throw err;
-            }
+      /*if(typeof this.reqData.queryString.name === 'string'){
+        params.FilterExpression = "#a1 = :b";
+        params.ExpressionAttributeNames = {
+          "#a1": "name"
+        };
+        params.ExpressionAttributeValues = {
+          ":b": this.reqData.queryString.name 
+        };
+      }*/
+      //console.log(params);
+      let dataArray = await db.scanDataByFilter(params);
 
-            return JSONAPI.makeJSONAPI(TYPE_NAME, dataArray);   
-        }catch(err) {
-            console.log("==restaurant get err!!==");
-            console.log(err);
-            throw err;
-        } 
-    }*/
+      dataArray = dataArray.map(restaurantData => {
+        //translate
+        let i18n = new I18n.main(restaurantData, this.idArray);
+        restaurantData = i18n.translate(this.lang);
 
-    async get() {
-        try {
-            let dataArray = await db.scan(TABLE_NAME);
-            dataArray.map(restaurantData => {
-                //translate
-                let i18n = new I18n.main(restaurantData, this.idArray);
-                restaurantData = i18n.translate(this.lang);
-                return this.output(restaurantData, restaurantData.id);
-            });
-
-            //if empty
-            if(dataArray.length == 0){
-                let err = new Error("not found");
-                err.statusCode = 404;
-                throw err;
-            }
-            return JSONAPI.makeJSONAPI(TYPE_NAME, dataArray);            
-        }catch(err) {
-            console.log("==restaurant get err!!==");
-            console.log(err);
-            throw err;
+        return this.outputBrief(restaurantData, restaurantData.id);
+      }).filter(restaurantData => {
+        //console.log(restaurantData);
+        let pureQuery = true;
+        let found = false;
+        if(typeof this.reqData.queryString.name === 'string'){
+          pureQuery = false;
+          let name = restaurantData.name.toLowerCase();
+          if(name.indexOf(this.reqData.queryString.name.toLowerCase()) >= 0){
+            found = true;
+          }
         }
-    }
-
-    async getByID() {
-        try {
-            let restaurantData = await db.queryById(TABLE_NAME, this.restaurant_fullID);
-
-            //translate
-            let i18n = new I18n.main(restaurantData, this.idArray);
-            restaurantData = i18n.translate(this.lang);
-
-            //output
-            let output = this.output(restaurantData, this.restaurant_fullID);
-            return JSONAPI.makeJSONAPI(TYPE_NAME, output);         
-        }catch(err) {
-            throw err;
+        if(typeof this.reqData.queryString.keyword === 'string'){
+          pureQuery = false;
+          let name = restaurantData.name.toLowerCase();
+          let category = restaurantData.category.toLowerCase();
+          if(name.indexOf(this.reqData.queryString.keyword.toLowerCase()) >= 0){
+            found = true;
+          }
+          else if(category.indexOf(this.reqData.queryString.keyword.toLowerCase()) >= 0){
+            found = true;
+          }
         }
+        
+        if(pureQuery){
+          found = true;
+        }
+        return found;
+      });
+
+      //if empty
+      if(dataArray.length == 0){
+        let err = new Error("not found");
+        err.statusCode = 404;
+        throw err;
+      }
+
+      return JSONAPI.makeJSONAPI(TYPE_NAME, dataArray);   
+    }catch(err) {
+      console.log("==restaurant get err!!==");
+      console.log(err);
+      throw err;
     }
+  }
+
+  async getByID() {
+      try {
+          let restaurantData = await db.queryById(TABLE_NAME, this.restaurant_fullID);
+
+          //translate
+          let i18n = new I18n.main(restaurantData, this.idArray);
+          restaurantData = i18n.translate(this.lang);
+
+          //output
+          let output = this.output(restaurantData, this.restaurant_fullID);
+          return JSONAPI.makeJSONAPI(TYPE_NAME, output);         
+      }catch(err) {
+          throw err;
+      }
+  }
 
   async getPhotoInfo() {
     let restaurant_id = this.reqData.params.restaurant_id;

@@ -52,6 +52,7 @@ class Items {
 
   async getMenusData(mix){
     let menusData;
+    
     if(mix){
       try {
         let restaurantMenusData = await db.queryById(TABLE_NAME, this.reqData.params.restaurant_id);
@@ -63,7 +64,7 @@ class Items {
           "menus": {}
         };
       }
-  
+
       if(this.branchQuery){
         try {
           let branchMenusData = await db.queryById(TABLE_NAME, this.branch_fullID);
@@ -205,6 +206,35 @@ class Items {
       }catch(err) {
           throw err;
       }
+  }
+
+  async getMenuItems() {
+    let dbMenusData = await this.getMenusData(true);
+    let itemsData = dbMenusData.items;
+
+    let menu_fullID = this.branch_fullID + this.reqData.params.menu_id;
+    let menuData = dbMenusData.menus[menu_fullID];
+
+    //output   
+    let dataArray = menuData.items.map(item_id => {
+      let itemData = itemsData[item_id];
+
+      //translate
+      let i18n = new I18n.main(itemData, this.idArray);
+      itemData = i18n.translate(this.lang);
+
+      return this.outputBrief(itemData, item_id);
+    });
+
+
+    //if empty
+    if(dataArray.length == 0){
+        let err = new Error("not found");
+        err.statusCode = 404;
+        throw err;
+    }
+
+    return JSONAPI.makeJSONAPI(TYPE_NAME, dataArray);
   }
 
   async getPhotoInfo() {

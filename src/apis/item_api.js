@@ -47,6 +47,28 @@ api.get('/restaurants/{restaurant_id}/items/{item_id}', async (req) => {
   }
 });
 
+api.get('/restaurants/{restaurant_id}/branches/{branch_id}/menus/{menu_id}/items', async (req) => {
+  let cmdObj = new Items.main(req);
+
+  try{
+      return await cmdObj.getMenuItems();
+  }
+  catch(err){
+      throw err;
+  }
+});
+
+api.get('/restaurants/{restaurant_id}/menus/{menu_id}/items', async (req) => {
+  let cmdObj = new Items.main(req);
+
+  try{
+      return await cmdObj.getMenuItems();
+  }
+  catch(err){
+      throw err;
+  }
+});
+
 //=========== Photos =========
 api.get('/restaurants/{restaurant_id}/items/{item_id}/photos/{photo_id}', async (req) => {
   let cmdObj = new Items.main(req);

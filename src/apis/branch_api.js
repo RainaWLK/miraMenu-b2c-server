@@ -7,10 +7,10 @@ api.get('/restaurants/{restaurant_id}/branches', async (req) => {
   let cmdObj = new Branches.main(req);
 
   try{
-      return await cmdObj.get();
+    return await cmdObj.get();
   }
   catch(err){
-      throw err;
+    throw err;
   }
 });
 
@@ -18,10 +18,21 @@ api.get('/restaurants/{restaurant_id}/branches/{branch_id}', async (req) => {
   let cmdObj = new Branches.main(req);
 
   try{
-      return await cmdObj.getByID();
+    return await cmdObj.getByID();
   }
   catch(err){
-      throw err;
+    throw err;
+  }
+});
+
+api.get('/branches', async (req) => {
+  let cmdObj = new Branches.main(req);
+
+  try{
+    return await cmdObj.searchBranches();
+  }
+  catch(err){
+    throw err;
   }
 });
 

@@ -55,7 +55,8 @@ class Branches {
     outputBrief(data, fullID){
       let outputData = {
         "id": fullID,
-        "name": data.name,
+        "restaurant_name": data.restaurant_name,
+        "branch_name": data.name,
         "category": data.category,
         "geolocation": {
             "zipcode": data.location.zipcode
@@ -86,6 +87,10 @@ class Branches {
         try {
             //scan table Restaurant (bug: must merged into dynamodb.js)
             let restaurant_id = this.reqData.params.restaurant_id.toString();
+            let restaurantData = await db.queryById(RESTAURANT_TABLE_NAME, restaurant_id);            
+            let restaurant_i18n = new I18n.main(restaurantData, null);
+            restaurantData = restaurant_i18n.translate(this.lang);
+
             var params = {
                 TableName: TABLE_NAME,
                 //ProjectionExpression: "#yr, title, info.rating",
@@ -111,6 +116,7 @@ class Branches {
               //translate
               let i18n = new I18n.main(branchData, this.idArray);
               branchData = i18n.translate(this.lang);
+              branchData.restaurant_name = restaurantData.name;
 
               return this.outputBrief(branchData, branchData.id);
             });
@@ -152,6 +158,85 @@ class Branches {
             throw err;
         }
     }
+  
+    async searchBranches() { 
+      try {
+        let restaurant_params = {
+          TableName: RESTAURANT_TABLE_NAME,
+          ReturnConsumedCapacity: "TOTAL"
+        };
+        let RestaurantdataArray = await db.scanDataByFilter(restaurant_params);
+
+        let params = {
+          TableName: TABLE_NAME,
+          ReturnConsumedCapacity: "TOTAL"
+        };
+        let dataArray = await db.scanDataByFilter(params);
+  
+        dataArray = dataArray.map(branchData => {
+          //translate
+          let i18n = new I18n.main(branchData, this.idArray);
+          branchData = i18n.translate(this.lang);
+          return branchData;
+        }).filter(branchData => {
+          //console.log(branchData);
+          let pureQuery = true;
+          let found = false;
+
+          let idArray = Utils.parseID(branchData.id);
+          let restaurant_id = "r"+idArray.r;
+
+          let restaurantData = RestaurantdataArray.find(element => element.id == restaurant_id);
+ 
+          //db data error
+          if(restaurantData == undefined){
+            console.log("db data error, skip");
+            return false;
+          }
+          let i18n = new I18n.main(restaurantData, null);
+          restaurantData = i18n.translate(this.lang);
+          branchData.restaurant_name = restaurantData.name;
+  
+          if(typeof this.reqData.queryString.keyword === 'string'){
+            pureQuery = false;
+            let name = branchData.name.toLowerCase();
+            let category = branchData.category.toLowerCase();
+            if(name.indexOf(this.reqData.queryString.keyword.toLowerCase()) >= 0){
+              found = true;
+            }
+            else if(category.indexOf(this.reqData.queryString.keyword.toLowerCase()) >= 0){
+              found = true;
+            }
+            else if(restaurantData.name.indexOf(this.reqData.queryString.keyword.toLowerCase()) >= 0){
+              found = true;
+            }
+            else if(restaurantData.category.indexOf(this.reqData.queryString.keyword.toLowerCase()) >= 0){
+              found = true;
+            }
+          }
+          
+          if(pureQuery){
+            found = true;
+          }
+          return found;
+        }).map(branchData => {
+          return this.outputBrief(branchData, branchData.id);
+        });
+  
+        //if empty
+        if(dataArray.length == 0){
+          let err = new Error("not found");
+          err.statusCode = 404;
+          throw err;
+        }
+  
+        return JSONAPI.makeJSONAPI(TYPE_NAME, dataArray);   
+      }catch(err) {
+        console.log("==branch get err!!==");
+        console.log(err);
+        throw err;
+      }
+    }    
 
   async getPhotoInfo() {
     let branch_id = this.reqData.params.restaurant_id+this.reqData.params.branch_id;

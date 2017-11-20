@@ -199,23 +199,30 @@ class Menus {
       let menuData = menusData[menu_id];
 
       //item brief
-      menuData.menu_section = {
-        "name": "main menu",
-        "items": menuData.items.map(item_id => {
-          let itemData = itemsData[item_id];
-          let itemBrief = {
-            "id": item_id,
-            "name": itemData.name,
-            "availability": (itemData.menu_availability == false)?false:true,
-            "item_hours": itemData.item_hours,
-            "list_price": itemData.list_price,
-            "tags": itemData.tags,
-            "note": itemData.note,
-            "main_photo_url": this.getMainPhotoUrl(itemData.photos)
+      if(menuData.menu_section === undefined){
+        menuData.menu_section = [];
+
+        if((Array.isArray(menuData.items))&&(menuData.items.length > 0)){
+          let item_section = {
+            "name": "main menu",
+            "items": menuData.items.map(item_id => {
+              let itemData = itemsData[item_id];
+              let itemBrief = {
+                "id": item_id,
+                "name": itemData.name,
+                "availability": (itemData.menu_availability == false)?false:true,
+                "item_hours": itemData.item_hours,
+                "list_price": itemData.list_price,
+                "tags": itemData.tags,
+                "note": itemData.note,
+                "main_photo_url": this.getMainPhotoUrl(itemData.photos)
+              };
+              return itemBrief;
+            })
           };
-          return itemBrief;
-        })
-      };
+          menuData.menu_section.push(item_section);
+        }
+      }
 
       //translate
       let i18n = new I18n.main(menuData, this.idArray);

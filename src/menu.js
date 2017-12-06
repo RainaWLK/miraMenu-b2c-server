@@ -113,23 +113,7 @@ class Menus {
         throw err;
       }
 
-      menuData.menu_section = {
-        "name": "main menu",
-        "items": menuData.items.map(item_id => {
-          let itemData = itemsData[item_id];
-          let itemBrief = {
-            "id": item_id,
-            "name": itemData.name,
-            "availability": (itemData.menu_availability == false)?false:true,
-            "item_hours": itemData.item_hours,
-            "list_price": itemData.list_price,
-            "tags": itemData.tags,
-            "note": itemData.note,
-            "main_photo_url": this.getMainPhotoUrl(itemData.photos)
-          };
-          return itemBrief;
-        })
-      };
+      menuData.sections = this.migrateSections(menuData, itemsData);
       delete menuData.items;
 
       return menuData;
@@ -145,24 +129,40 @@ class Menus {
     delete data.menuControl;
 
     //calibration
-    data.category = data.menu_cat;
-    delete data.menu_cat;
-    data.desc = data.menu_desc;
-    delete data.menu_desc;
-    data.availability = (data.menu_availability == false)?false:true;
-    delete data.menu_availability;
+    if(data.category === undefined){
+      data.category = data.menu_cat;
+      delete data.menu_cat;
+    }
+    if(data.desc === undefined){
+      data.desc = data.menu_desc;
+      delete data.menu_desc;
+    }
+    if(data.availability === undefined){
+      data.availability = data.menu_availability;
+      delete data.menu_availability;      
+    }
 
     return data;
   }
   
   outputBrief(data, fullID){
+    if(data.category === undefined){
+      data.category = data.menu_cat;
+    }
+    if(data.desc === undefined){
+      data.desc = data.menu_desc;
+    }
+    if(data.availability === undefined){
+      data.availability = data.menu_availability;
+    }
+
     let outputData = {
       "id": fullID,
       "name": data.name,
-      "category": data.menu_cat,
-      "availability": (data.menu_availability == false)?false:true,
+      "category": data.category,
+      "availability": (data.availability == false)?false:true,
       "menu_hours": data.menu_hours,
-      "menu_section": data.menu_section,
+      "sections": data.sections,
       "main_photo_url": this.getMainPhotoUrl(data.photos)
     };
      
@@ -186,6 +186,46 @@ class Menus {
     }
   }
 
+  migrateSections(menuData, itemsData){
+    let sections = [];
+
+    let getItemBrief = (item_id) => {
+      let itemData = itemsData[item_id];    
+      //translate
+      let i18n = new I18n.main(itemData, this.idArray);
+      itemData = i18n.translate(this.lang);
+
+      let itemBrief = {
+        "id": item_id,
+        "name": itemData.name,
+        "availability": (itemData.menu_availability == false)?false:true,
+        "item_hours": itemData.item_hours,
+        "list_price": itemData.list_price,
+        "tags": itemData.tags,
+        "note": itemData.note,
+        "main_photo_url": this.getMainPhotoUrl(itemData.photos)
+      };
+      return itemBrief;
+    };
+
+    if(menuData.sections === undefined){
+      if((Array.isArray(menuData.items))&&(menuData.items.length > 0)){
+        let item_section = {
+          "name": "main menu",
+          "items": menuData.items.filter(item_id => itemsData[item_id])
+          .map(item_id => getItemBrief(item_id))
+        };
+        sections.push(item_section);
+      }
+    }
+    else{
+      sections = menuData.sections.map(item_section => {
+        item_section.items = item_section.items.map(item_id => getItemBrief(item_id));
+        return item_section;
+      });
+    }
+    return sections;
+  }
 
   async get() {
     let dbMenusData = await this.getMenusData(true);
@@ -199,30 +239,7 @@ class Menus {
       let menuData = menusData[menu_id];
 
       //item brief
-      if(menuData.menu_section === undefined){
-        menuData.menu_section = [];
-
-        if((Array.isArray(menuData.items))&&(menuData.items.length > 0)){
-          let item_section = {
-            "name": "main menu",
-            "items": menuData.items.map(item_id => {
-              let itemData = itemsData[item_id];
-              let itemBrief = {
-                "id": item_id,
-                "name": itemData.name,
-                "availability": (itemData.menu_availability == false)?false:true,
-                "item_hours": itemData.item_hours,
-                "list_price": itemData.list_price,
-                "tags": itemData.tags,
-                "note": itemData.note,
-                "main_photo_url": this.getMainPhotoUrl(itemData.photos)
-              };
-              return itemBrief;
-            })
-          };
-          menuData.menu_section.push(item_section);
-        }
-      }
+      menuData.sections = this.migrateSections(menuData, itemsData);
 
       //translate
       let i18n = new I18n.main(menuData, this.idArray);

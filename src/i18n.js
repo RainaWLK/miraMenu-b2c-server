@@ -49,7 +49,10 @@ class I18n {
     }
     
     let i18nData = this.dbData.i18n[key];
-    if(typeof lang == 'undefined'){
+    if(i18nData === undefined){
+      return "";
+    }
+    if(lang === undefined){
       lang = i18nData.default;
     }
 

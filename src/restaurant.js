@@ -35,12 +35,6 @@ class Restaurant {
     data.photos = Utils.objToArray(data.photos);
     delete data.restaurantControl;
 
-    data.geolocation = {};
-    data.geolocation.zipcode = data.location.zipcode;
-    data.address = data.location.address;
-    data.tel = data.location.tel;
-    delete data.location;
-
     return data;
   }
 
@@ -59,9 +53,9 @@ class Restaurant {
     outputData.id = fullID;
     outputData.name = data.name;
     outputData.category = data.category;
-    outputData.geolocation.zipcode = data.location.zipcode;
-    outputData.address = data.location.address;
-    outputData.tel = data.location.tel;
+    outputData.geolocation.zipcode = data.geolocation.zipcode;
+    outputData.address = data.address;
+    outputData.tel = data.tel;
     outputData.availability = (data.availability == false)?false:true;
 
     let main_photo = {};

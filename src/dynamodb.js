@@ -260,6 +260,7 @@ exports.scan = scanData;
 exports.post = postData;
 exports.put = putData;
 exports.delete = deleteData;
+exports.query = queryData;
 
 exports.scanDataByFilter = scanDataByFilter;
 

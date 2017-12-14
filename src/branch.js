@@ -145,11 +145,11 @@ class Branches {
             let branchData = await db.queryById(TABLE_NAME, this.branch_fullID);
 
             //table
-            //let tableArray = [];
-            //for(let table_id in branchData.tables){
-            //    tableArray.push(table_id);
-            //}
-            //branchData.tables = tableArray;
+            let tableArray = [];
+            for(let table_id in branchData.tables){
+                tableArray.push(table_id);
+            }
+            branchData.tables = tableArray;
 
             //translate
             let i18n = new I18n.main(branchData, this.idArray);
@@ -257,6 +257,22 @@ class Branches {
         //},
         ReturnConsumedCapacity: "TOTAL"
       };
+      let page = 0;
+      let limit = 0;
+      let start = 0;
+      let end = null;
+      if(typeof this.reqData.queryString.page == 'string'){
+        page = parseInt(this.reqData.queryString.page);
+      }      
+      if(typeof this.reqData.queryString.offset == 'string'){
+        limit = parseInt(this.reqData.queryString.offset);
+      }
+      if(page > 0 && limit > 0){
+        //params.Limit = limit;
+        start = (page-1)*limit;
+        end = page*limit;
+      }
+
       let dataArray = await db.scanDataByFilter(params);
 /*      console.log(`got ${dataArray.length} items...`);
       dataArray = dataArray.map(branchData => {
@@ -317,11 +333,18 @@ class Branches {
         if(pureQuery){
           found = true;
         }
+
         return found;
-      }).map(branchData => {
+      })
+      .map(branchData => {
         return this.outputBrief(branchData, branchData.id);
       });
 
+      //page offset
+      if((start >= 0) && (end > 0)){
+        dataArray = dataArray.slice(start, end);
+      }
+      
       //if empty
       if(dataArray.length == 0){
         let err = new Error("not found");

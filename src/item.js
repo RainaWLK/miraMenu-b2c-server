@@ -136,6 +136,31 @@ class Items {
     return outputData;
   }
 
+  pageOffset(dataArray){
+    let page = 0;
+    let limit = 0;
+    let start = 0;
+    let end = null;
+    if(typeof this.reqData.queryString.page == 'string'){
+      page = parseInt(this.reqData.queryString.page);
+    }      
+    if(typeof this.reqData.queryString.offset == 'string'){
+      limit = parseInt(this.reqData.queryString.offset);
+    }
+    if(page > 0 && limit > 0){
+      //params.Limit = limit;
+      start = (page-1)*limit;
+      end = page*limit;
+    }
+
+    //page offset
+    if((start >= 0) && (end > 0)){
+      dataArray = dataArray.slice(start, end);
+    }
+    
+    return dataArray;
+  }
+
   getMainPhotoUrl(photos){
     let main_photo = {};
     for(let i in photos){
@@ -172,6 +197,8 @@ class Items {
 
         dataArray.push(output);
     }
+
+    dataArray = this.pageOffset(dataArray);
 
     //if empty
     if(dataArray.length == 0){
@@ -226,6 +253,7 @@ class Items {
       return this.outputBrief(itemData, item_id);
     });
 
+    dataArray = this.pageOffset(dataArray);
 
     //if empty
     if(dataArray.length == 0){

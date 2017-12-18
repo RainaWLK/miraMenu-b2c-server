@@ -10,6 +10,8 @@ let _ = require('lodash');
 const TABLE_NAME = "Branches";
 const RESTAURANT_TABLE_NAME = "Restaurants";
 
+const B2C_TABLE_NAME = "BranchesB2C";
+
 const TYPE_NAME = "branches";
 
 
@@ -22,230 +24,178 @@ let i18nSchema = {
 }
 
 class Branches {
-    constructor(reqData){
-        this.reqData = reqData;
+  constructor(reqData){
+      this.reqData = reqData;
 
-        //id array
-        this.branch_fullID = this.reqData.params.restaurant_id;
-        if(typeof this.reqData.params.branch_id === 'string'){
-            this.branch_fullID += this.reqData.params.branch_id;
-        }
-        this.idArray = Utils.parseID(this.branch_fullID);
+      //id array
+      this.branch_fullID = this.reqData.params.restaurant_id;
+      if(typeof this.reqData.params.branch_id === 'string'){
+          this.branch_fullID += this.reqData.params.branch_id;
+      }
+      this.idArray = Utils.parseID(this.branch_fullID);
 
-        //lang
-        if(typeof reqData.queryString.lang == 'string'){
-            this.lang = reqData.queryString.lang;
-        }
+      //lang
+      if(typeof reqData.queryString.lang == 'string'){
+          this.lang = reqData.queryString.lang;
+      }
+  }
+
+  output(data, fullID){
+    data.id = fullID;
+    data.photos = Utils.objToArray(data.photos);
+    delete data.branchControl;
+
+    //data.geolocation = {};
+    //data.geolocation.zipcode = data.zipcode;
+    //data.address = data.location.address;
+    //data.tel = data.location.tel;
+    //delete data.location;
+
+    return data;
+  }
+  
+  outputBrief(data, fullID){
+    let outputData = {
+      "id": fullID,
+      "restaurant_name": data.restaurant_name,
+      "branch_name": data.branch_name,
+      "category": data.category,
+      "geolocation": {
+        "zipcode": data.geolocation.zipcode
+      },
+      "address": data.address,
+      "tel": data.tel,
+      "availability": (data.availability == false)?false:true,
+      "branch_hours": data.branch_hours,
+      "main_photo_url": {}
+    };
+
+    let main_photo = {};
+    for(let i in data.photos){
+      main_photo = data.photos[i];
+      if(data.photos[i].role == 'main'){
+        break;
+      }
     }
 
-    output(data, fullID){
-      data.id = fullID;
-      data.photos = Utils.objToArray(data.photos);
-      delete data.branchControl;
-  
-      //data.geolocation = {};
-      //data.geolocation.zipcode = data.zipcode;
-      //data.address = data.location.address;
-      //data.tel = data.location.tel;
-      //delete data.location;
-  
-      return data;
+    if(main_photo.url !== undefined){
+      outputData.main_photo_url = main_photo.url;
+    }
+      
+    return outputData;
+  }
+
+  pageOffset(dataArray){
+    let page = 0;
+    let limit = 0;
+    let start = 0;
+    let end = null;
+    if(typeof this.reqData.queryString.page == 'string'){
+      page = parseInt(this.reqData.queryString.page);
+    }      
+    if(typeof this.reqData.queryString.offset == 'string'){
+      limit = parseInt(this.reqData.queryString.offset);
+    }
+    if(page > 0 && limit > 0){
+      //params.Limit = limit;
+      start = (page-1)*limit;
+      end = page*limit;
+    }
+
+    //page offset
+    if((start >= 0) && (end > 0)){
+      dataArray = dataArray.slice(start, end);
     }
     
-    outputBrief(data, fullID){
-      let outputData = {
-        "id": fullID,
-        "restaurant_name": data.restaurant_name,
-        "branch_name": data.branch_name,
-        "category": data.category,
-        "geolocation": {
-          "zipcode": data.geolocation.zipcode
-        },
-        "address": data.address,
-        "tel": data.tel,
-        "availability": (data.availability == false)?false:true,
-        "branch_hours": data.branch_hours,
-        "main_photo_url": {}
-      };
-  
-      let main_photo = {};
-      for(let i in data.photos){
-        main_photo = data.photos[i];
-        if(data.photos[i].role == 'main'){
-          break;
-        }
-      }
-  
-      if(main_photo.url !== undefined){
-        outputData.main_photo_url = main_photo.url;
-      }
-        
-      return outputData;
-    }
+    return dataArray;
+  }
 
-    async get() {
-        try {
-            //scan table Restaurant (bug: must merged into dynamodb.js)
-            let restaurant_id = this.reqData.params.restaurant_id.toString();
-            let restaurantData = await db.queryById(RESTAURANT_TABLE_NAME, restaurant_id);            
-            let restaurant_i18n = new I18n.main(restaurantData, null);
-            restaurantData = restaurant_i18n.translate(this.lang);
+  async get() {
+      try {
+          //scan table Restaurant (bug: must merged into dynamodb.js)
+          let restaurant_id = this.reqData.params.restaurant_id.toString();
+          let restaurantData = await db.queryById(RESTAURANT_TABLE_NAME, restaurant_id);            
+          let restaurant_i18n = new I18n.main(restaurantData, null);
+          restaurantData = restaurant_i18n.translate(this.lang);
 
-            var params = {
-                TableName: TABLE_NAME,
-                //ProjectionExpression: "#yr, title, info.rating",
-                FilterExpression: "#a1.#a2 = :b",
-                ExpressionAttributeNames: {
-                    "#a1": "branchControl",
-                    "#a2": "restaurant_id"
-                },
-                ExpressionAttributeValues: {
-                     ":b": restaurant_id 
-                },
-                ReturnConsumedCapacity: "TOTAL"
-            };
-            let dataArray = await db.scanDataByFilter(params);
-            dataArray = dataArray.map(branchData => {
-              //table
-              //let tableArray = [];
-              //for(let table_id in branchData.tables){
-              //    tableArray.push(table_id);
-              //}
-              //branchData.tables = tableArray;
-
-              //translate
-              let i18n = new I18n.main(branchData, this.idArray);
-              branchData = i18n.translate(this.lang);
-              branchData.restaurant_name = restaurantData.name;
-
-              //sync with b2c table
-              branchData.branch_name = branchData.name;
-              delete branchData.name;
-
-              return this.outputBrief(branchData, branchData.id);
-            });
-
-            //if empty
-            if(dataArray.length == 0){
-                let err = new Error("not found");
-                err.statusCode = 404;
-                throw err;
-            }
-
-            return JSONAPI.makeJSONAPI(TYPE_NAME, dataArray);            
-        }catch(err) {
-            console.log("==branch get err!!==");
-            console.log(err);
-            throw err;
-        }
-    }
-
-    async getByID() {
-        try {
-            let branchData = await db.queryById(TABLE_NAME, this.branch_fullID);
-
+          var params = {
+              TableName: TABLE_NAME,
+              //ProjectionExpression: "#yr, title, info.rating",
+              FilterExpression: "#a1.#a2 = :b",
+              ExpressionAttributeNames: {
+                  "#a1": "branchControl",
+                  "#a2": "restaurant_id"
+              },
+              ExpressionAttributeValues: {
+                    ":b": restaurant_id 
+              },
+              ReturnConsumedCapacity: "TOTAL"
+          };
+          let dataArray = await db.scanDataByFilter(params);
+          dataArray = dataArray.map(branchData => {
             //table
-            let tableArray = [];
-            for(let table_id in branchData.tables){
-                tableArray.push(table_id);
-            }
-            branchData.tables = tableArray;
+            //let tableArray = [];
+            //for(let table_id in branchData.tables){
+            //    tableArray.push(table_id);
+            //}
+            //branchData.tables = tableArray;
 
             //translate
             let i18n = new I18n.main(branchData, this.idArray);
             branchData = i18n.translate(this.lang);
+            branchData.restaurant_name = restaurantData.name;
 
-            //output
-            let output = this.output(branchData, this.branch_fullID);
-            return JSONAPI.makeJSONAPI(TYPE_NAME, output);
-        }catch(err) {
-            throw err;
-        }
-    }
-  /*
-    async searchBranches() { 
+            //sync with b2c table
+            branchData.branch_name = branchData.name;
+            delete branchData.name;
+
+            return this.outputBrief(branchData, branchData.id);
+          });
+
+          dataArray = this.pageOffset(dataArray);
+
+          //if empty
+          if(dataArray.length == 0){
+              let err = new Error("not found");
+              err.statusCode = 404;
+              throw err;
+          }
+
+          return JSONAPI.makeJSONAPI(TYPE_NAME, dataArray);            
+      }catch(err) {
+          console.log("==branch get err!!==");
+          console.log(err);
+          throw err;
+      }
+  }
+
+  async getByID() {
       try {
-        let restaurant_params = {
-          TableName: RESTAURANT_TABLE_NAME,
-          ReturnConsumedCapacity: "TOTAL"
-        };
-        let RestaurantdataArray = await db.scanDataByFilter(restaurant_params);
+          let branchData = await db.queryById(TABLE_NAME, this.branch_fullID);
 
-        let params = {
-          TableName: TABLE_NAME,
-          ReturnConsumedCapacity: "TOTAL"
-        };
-        let dataArray = await db.scanDataByFilter(params);
-  
-        dataArray = dataArray.map(branchData => {
+          //table
+          let tableArray = [];
+          for(let table_id in branchData.tables){
+              tableArray.push(table_id);
+          }
+          branchData.tables = tableArray;
+
           //translate
           let i18n = new I18n.main(branchData, this.idArray);
           branchData = i18n.translate(this.lang);
-          return branchData;
-        }).filter(branchData => {
-          //console.log(branchData);
-          let pureQuery = true;
-          let found = false;
 
-          let idArray = Utils.parseID(branchData.id);
-          let restaurant_id = "r"+idArray.r;
-
-          let restaurantData = RestaurantdataArray.find(element => element.id == restaurant_id);
- 
-          //db data error
-          if(restaurantData == undefined){
-            console.log("db data error, skip");
-            return false;
-          }
-          let i18n = new I18n.main(restaurantData, null);
-          restaurantData = i18n.translate(this.lang);
-          branchData.restaurant_name = restaurantData.name;
-  
-          if(typeof this.reqData.queryString.keyword === 'string'){
-            pureQuery = false;
-            let name = branchData.name.toLowerCase();
-            let category = branchData.category.toLowerCase();
-            if(name.indexOf(this.reqData.queryString.keyword.toLowerCase()) >= 0){
-              found = true;
-            }
-            else if(category.indexOf(this.reqData.queryString.keyword.toLowerCase()) >= 0){
-              found = true;
-            }
-            else if(restaurantData.name.indexOf(this.reqData.queryString.keyword.toLowerCase()) >= 0){
-              found = true;
-            }
-            else if(restaurantData.category.indexOf(this.reqData.queryString.keyword.toLowerCase()) >= 0){
-              found = true;
-            }
-          }
-          
-          if(pureQuery){
-            found = true;
-          }
-          return found;
-        }).map(branchData => {
-          return this.outputBrief(branchData, branchData.id);
-        });
-  
-        //if empty
-        if(dataArray.length == 0){
-          let err = new Error("not found");
-          err.statusCode = 404;
-          throw err;
-        }
-  
-        return JSONAPI.makeJSONAPI(TYPE_NAME, dataArray);   
+          //output
+          let output = this.output(branchData, this.branch_fullID);
+          return JSONAPI.makeJSONAPI(TYPE_NAME, output);
       }catch(err) {
-        console.log("==branch get err!!==");
-        console.log(err);
-        throw err;
+          throw err;
       }
-    }    */
+  }
 
   async searchBranches() { 
     try {
       let params = {
-        TableName: "BranchesB2C",
+        TableName: B2C_TABLE_NAME,
         //FilterExpression: "contains(#branchName, :k) or contains(#restaurantName, :k) or contains(#category, :k)",
         //ExpressionAttributeNames:{
         //    "#branchName": "branch_name",
@@ -257,21 +207,6 @@ class Branches {
         //},
         ReturnConsumedCapacity: "TOTAL"
       };
-      let page = 0;
-      let limit = 0;
-      let start = 0;
-      let end = null;
-      if(typeof this.reqData.queryString.page == 'string'){
-        page = parseInt(this.reqData.queryString.page);
-      }      
-      if(typeof this.reqData.queryString.offset == 'string'){
-        limit = parseInt(this.reqData.queryString.offset);
-      }
-      if(page > 0 && limit > 0){
-        //params.Limit = limit;
-        start = (page-1)*limit;
-        end = page*limit;
-      }
 
       let dataArray = await db.scanDataByFilter(params);
 /*      console.log(`got ${dataArray.length} items...`);
@@ -340,10 +275,7 @@ class Branches {
         return this.outputBrief(branchData, branchData.id);
       });
 
-      //page offset
-      if((start >= 0) && (end > 0)){
-        dataArray = dataArray.slice(start, end);
-      }
+      dataArray = this.pageOffset(dataArray);
       
       //if empty
       if(dataArray.length == 0){

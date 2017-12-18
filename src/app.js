@@ -20,7 +20,7 @@ Recommand_API.go(api);
 //for unittest
 //let utils = require('./utils');
 //utils.unittest();
-let recommand = require('./recommand');
-recommand.unittest();
+//let recommand = require('./recommand');
+//recommand.unittest();
 
 module.exports = api.app;

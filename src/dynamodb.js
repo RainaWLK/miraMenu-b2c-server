@@ -1,45 +1,43 @@
 let AWS = require('aws-sdk');
 let _ = require('lodash');
+let sns = require('./sns.js');
 
 AWS.config.update({
     region: "us-east-1"
 });
-//if (typeof Promise === 'undefined') {
-//  AWS.config.setPromisesDependency(require('bluebird'));
-//}
-//AWS.config.setPromisesDependency(require('Q').Promise);
 //const doc = require('dynamodb-doc');
 const docClient = new AWS.DynamoDB.DocumentClient();
 
 async function queryDataById(tableName, id){
-    var params = {
-        TableName : tableName,
-        KeyConditionExpression: "#id = :id",
-        ExpressionAttributeNames:{
-            "#id": "id"
-        },
-        ExpressionAttributeValues: {
-            ":id":id
-        },
-        ReturnConsumedCapacity: "TOTAL"
-    };
+  var params = {
+    TableName : tableName,
+    KeyConditionExpression: "#id = :id",
+    ExpressionAttributeNames:{
+        "#id": "id"
+    },
+    ExpressionAttributeValues: {
+        ":id":id
+    },
+    ReturnConsumedCapacity: "TOTAL"
+  };
 
-    try {
-        let dataArray = await queryData(params);
-        if(dataArray.length == 0) {
-            let err = new Error("not found");
-            err.statusCode = 404;
-            throw err;
-        }
-        //debug
-        if(dataArray.length > 1){
-            console.log('!!!! queryDataById issue !!!!!');
-        }
-        return dataArray[0];
+  try {
+    let dataArray = await queryData(params);
+    if(dataArray.length == 0) {
+      let err = new Error("not found");
+      err.statusCode = 404;
+      throw err;
     }
-    catch(err) {
-        throw err;
+    //debug
+    if(dataArray.length > 1){
+      console.log('!!!! queryDataById issue !!!!!');
     }
+
+    return dataArray[0];
+  }
+  catch(err) {
+      throw err;
+  }
 
 }
 
@@ -102,7 +100,7 @@ function fixEmptyValue(data){
   let outputData = {};
   for(let i in data){
 
-    if(data[i] === ""){
+    if((data[i] === "")||(data[i] === undefined)){
       continue;
     }
     else if(Array.isArray(data[i])){
@@ -132,8 +130,9 @@ function postData(tableName, data){
   console.log(params.Item);
   return new Promise((resolve, reject) => {
 
-      docClient.put(params).promise().then(result => {
+      docClient.put(params).promise().then(async result => {
           console.log("Added item:", JSON.stringify(result, null, 2));
+          await sendSNS(tableName, "POST", inputData);
           resolve(result);
       }).catch(err => {
           console.error("Unable to add item. Error JSON:", JSON.stringify(err, null, 2));
@@ -175,14 +174,15 @@ function putData(tableName, data){
 
     return new Promise((resolve, reject) => {
 
-        docClient.update(params).promise().then(result => {
-            console.log("UpdateItem succeeded:", JSON.stringify(inputData, null, 2));
-             let outputData = result.Attributes;
-             outputData.id = inputData.id;
-            resolve(outputData);
+        docClient.update(params).promise().then(async result => {
+          console.log("UpdateItem succeeded:", JSON.stringify(inputData, null, 2));
+          let outputData = result.Attributes;
+          outputData.id = inputData.id;
+          await sendSNS(tableName, "PUT", outputData);
+          resolve(outputData);
         }).catch(err => {
-            console.error("Unable to update item. Error JSON:", JSON.stringify(err, null, 2));
-            reject(err);
+          console.error("Unable to update item. Error JSON:", JSON.stringify(err, null, 2));
+          reject(err);
         });
 
     });
@@ -202,8 +202,9 @@ function deleteData(tableName, data){
     };
 
     return new Promise((resolve, reject) => {
-        docClient.delete(params).promise().then(result => {
+        docClient.delete(params).promise().then(async result => {
             console.log("DeleteItem succeeded:", JSON.stringify(result, null, 2));
+            await sendSNS(tableName, "DELETE", data);
             resolve(result);
         }).catch(err => {
             console.error("Unable to delete item. Error JSON:", JSON.stringify(err, null, 2));
@@ -212,6 +213,44 @@ function deleteData(tableName, data){
 
     });
     
+}
+
+function batchGet(params){
+  return new Promise((resolve, reject) => {
+    params = fixEmptyValue(params);
+
+    docClient.batchGet(params).promise().then(result => {
+      console.log("Batch get succeeded:", JSON.stringify(result, null, 2));
+      resolve(result);
+    }).catch(err => {
+      console.error("Batch get fail. Error JSON:", JSON.stringify(err, null, 2));
+      reject(err);
+    });
+  });
+}
+
+function batchWrite(params){
+  return new Promise((resolve, reject) => {
+    params = fixEmptyValue(params);
+
+    console.log(params);
+    docClient.batchWrite(params).promise().then(result => {
+      console.log("Batch write succeeded:", JSON.stringify(result, null, 2));
+      resolve(result);
+    }).catch(err => {
+      console.error("Batch write fail. Error JSON:", JSON.stringify(err, null, 2));
+      reject(err);
+    });
+  });
+}
+
+async function sendSNS(tableName, method, data){
+  let attr = {
+    "table": tableName,
+    "method": method,
+    "id": data.id
+  }
+  return await sns.sendSNS(data, attr, "DBCache");
 }
 
 async function unittest(){
@@ -260,7 +299,8 @@ exports.scan = scanData;
 exports.post = postData;
 exports.put = putData;
 exports.delete = deleteData;
-exports.query = queryData;
+exports.batchGet = batchGet;
+exports.batchWrite = batchWrite;
 
 exports.scanDataByFilter = scanDataByFilter;
 

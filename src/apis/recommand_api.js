@@ -6,7 +6,7 @@ function go(api){
     let cmdObj = new Recommand.main(req);
   
     try{
-      return await cmdObj.searchBranches();
+      return await cmdObj.getBranches();
     }
     catch(err){
       throw err;
@@ -19,7 +19,7 @@ function go(api){
     let cmdObj = new Recommand.main(req);
   
     try{
-      return await cmdObj.searchBranches();
+      return await cmdObj.getBranchItems();
     }
     catch(err){
       throw err;

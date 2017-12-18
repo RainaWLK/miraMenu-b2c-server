@@ -129,70 +129,53 @@ class Recommand {
   }
 
   //quantity, 
-  async get() {
+  async getBranches() {
     try {
       let idList = await this.getBranchIDList();
       let recommand_idList = [];
       
       let quantity = parseInt(this.reqData.queryString.quantity, 10);
-      if(quantity < 0){
+      if((isNaN(quantity))||(quantity < 0)||(quantity > 100)){
         quantity = 10;
       }
       console.log(quantity);
+
+
+      let params = {
+        RequestItems: {}
+      };
+      params.RequestItems[B2C_TABLE_NAME] = {
+        Keys: []
+      };
+      let keys = params.RequestItems[B2C_TABLE_NAME].Keys;
+
+      let tmp = {};
+
       for(let i = 0; i < quantity; i++){
-        let num = Math.floor(Math.random() * quantity);
-        recommand_idList.push(num);
+        let num = Math.floor(Math.random() * idList.length);
+        //check existed
+        if(tmp[num] !== undefined){
+          console.log("skip:"+num);
+          i--;
+          continue;
+        }
+        tmp[num] = 0;
+
+        console.log(num);
+        console.log(idList[num]);
+        let id = idList[num];
+
+        keys.push({'id': id});
       }
-      console.log(recommand_idList);
+      console.log(keys);
+      console.log(params);
 
-      var params = {
-        TableName: TABLE_NAME,
-        //ProjectionExpression: "#yr, title, info.rating",
-        FilterExpression: "#a1.#a2 = :b",
-        ExpressionAttributeNames: {
-          "#a1": "branchControl",
-          "#a2": "restaurant_id"
-        },
-        ExpressionAttributeValues: {
-          ":b": restaurant_id 
-        },
-        ReturnConsumedCapacity: "TOTAL"
-      };
-      let dataArray = await db.scanDataByFilter(params);      
-
-
-      //scan table Restaurant (bug: must merged into dynamodb.js)
-      let restaurant_id = this.reqData.params.restaurant_id.toString();
-      let restaurantData = await db.queryById(RESTAURANT_TABLE_NAME, restaurant_id);            
-      let restaurant_i18n = new I18n.main(restaurantData, null);
-      restaurantData = restaurant_i18n.translate(this.lang);
-
-      var params = {
-        TableName: TABLE_NAME,
-        //ProjectionExpression: "#yr, title, info.rating",
-        FilterExpression: "#a1.#a2 = :b",
-        ExpressionAttributeNames: {
-          "#a1": "branchControl",
-          "#a2": "restaurant_id"
-        },
-        ExpressionAttributeValues: {
-          ":b": restaurant_id 
-        },
-        ReturnConsumedCapacity: "TOTAL"
-      };
-      let dataArray = await db.scanDataByFilter(params);
+      let result = await db.batchGet(params);
+      let dataArray = result.Responses[B2C_TABLE_NAME];
       dataArray = dataArray.map(branchData => {
-        //table
-        //let tableArray = [];
-        //for(let table_id in branchData.tables){
-        //    tableArray.push(table_id);
-        //}
-        //branchData.tables = tableArray;
-
         //translate
         let i18n = new I18n.main(branchData, this.idArray);
         branchData = i18n.translate(this.lang);
-        branchData.restaurant_name = restaurantData.name;
 
         //sync with b2c table
         branchData.branch_name = branchData.name;
@@ -210,7 +193,7 @@ class Recommand {
         throw err;
       }
 
-      return JSONAPI.makeJSONAPI(TYPE_NAME, dataArray);            
+      return JSONAPI.makeJSONAPI(TYPE_NAME, dataArray);       
     }catch(err) {
       console.log("==branch get err!!==");
       console.log(err);

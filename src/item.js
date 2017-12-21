@@ -5,6 +5,7 @@ let Utils = require('./utils.js');
 let I18n = require('./i18n.js');
 let _ = require('lodash');
 //let S3 = require('./s3');
+let filter = require('./filter.js');
 
 const BRANCH_TABLE_NAME = "Branches";
 const RESTAURANT_TABLE_NAME = "Restaurants";
@@ -122,7 +123,7 @@ class Items {
   }
 
   outputBrief(data, fullID){
-    let outputData = {
+    return {
       "id": fullID,
       "name": data.name,
       "availability": (data.menu_availability == false)?false:true,
@@ -132,33 +133,6 @@ class Items {
       "note": data.note,
       "main_photo_url": this.getMainPhotoUrl(data.photos)
     };
-    
-    return outputData;
-  }
-
-  pageOffset(dataArray){
-    let page = 0;
-    let limit = 0;
-    let start = 0;
-    let end = null;
-    if(typeof this.reqData.queryString.page == 'string'){
-      page = parseInt(this.reqData.queryString.page);
-    }      
-    if(typeof this.reqData.queryString.offset == 'string'){
-      limit = parseInt(this.reqData.queryString.offset);
-    }
-    if(page > 0 && limit > 0){
-      //params.Limit = limit;
-      start = (page-1)*limit;
-      end = page*limit;
-    }
-
-    //page offset
-    if((start >= 0) && (end > 0)){
-      dataArray = dataArray.slice(start, end);
-    }
-    
-    return dataArray;
   }
 
   getMainPhotoUrl(photos){
@@ -198,7 +172,8 @@ class Items {
         dataArray.push(output);
     }
 
-    dataArray = this.pageOffset(dataArray);
+    dataArray = filter.sortByFilter(this.reqData.queryString, dataArray);
+    dataArray = filter.pageOffset(this.reqData.queryString, dataArray);
 
     //if empty
     if(dataArray.length == 0){
@@ -242,18 +217,49 @@ class Items {
     let menu_fullID = this.branch_fullID + this.reqData.params.menu_id;
     let menuData = dbMenusData.menus[menu_fullID];
 
+    if((menuData === undefined)||(itemsData === undefined)){
+      let err = new Error("not found");
+      err.statusCode = 404;
+      throw err;
+    }
+
     //output   
-    let dataArray = menuData.items.map(item_id => {
-      let itemData = itemsData[item_id];
+    let dataArray;
+    if(menuData.sections === undefined){
+      if((Array.isArray(menuData.items))&&(menuData.items.length > 0)){
+        dataArray = menuData.items.map(item_id => {
+          let itemData = itemsData[item_id];
+    
+          //translate
+          let i18n = new I18n.main(itemData, this.idArray);
+          itemData = i18n.translate(this.lang);
+    
+          return this.outputBrief(itemData, item_id);
+        });
+      }
+    }
+    else{
+      dataArray = [];
+      for(let i in menuData.sections){
+        let item_section = menuData.sections[i];
 
-      //translate
-      let i18n = new I18n.main(itemData, this.idArray);
-      itemData = i18n.translate(this.lang);
+        item_section.items.map(item_id => {
+          let itemData = itemsData[item_id];
 
-      return this.outputBrief(itemData, item_id);
-    });
+          //translate
+          let i18n = new I18n.main(itemData, this.idArray);
+          itemData = i18n.translate(this.lang);
+    
+          let output = this.outputBrief(itemData, item_id);
+          output.section_name = item_section.name;
+          dataArray.push(output);
+          return;
+        });
+      }
+    }
 
-    dataArray = this.pageOffset(dataArray);
+    dataArray = filter.sortByFilter(this.reqData.queryString, dataArray);
+    dataArray = filter.pageOffset(this.reqData.queryString, dataArray);
 
     //if empty
     if(dataArray.length == 0){

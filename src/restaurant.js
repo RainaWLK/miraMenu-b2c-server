@@ -6,6 +6,7 @@ let Utils = require('./utils.js');
 let I18n = require('./i18n.js');
 let _ = require('lodash');
 //let S3 = require('./s3');
+let filter = require('./filter.js');
 
 const TABLE_NAME = "Restaurants";
 const USERINFO_TABLE_NAME = "Users";
@@ -73,31 +74,6 @@ class Restaurant {
     return outputData;
   }
 
-  pageOffset(dataArray){
-    let page = 0;
-    let limit = 0;
-    let start = 0;
-    let end = null;
-    if(typeof this.reqData.queryString.page == 'string'){
-      page = parseInt(this.reqData.queryString.page);
-    }      
-    if(typeof this.reqData.queryString.offset == 'string'){
-      limit = parseInt(this.reqData.queryString.offset);
-    }
-    if(page > 0 && limit > 0){
-      //params.Limit = limit;
-      start = (page-1)*limit;
-      end = page*limit;
-    }
-
-    //page offset
-    if((start >= 0) && (end > 0)){
-      dataArray = dataArray.slice(start, end);
-    }
-    
-    return dataArray;
-  }
-
   async get() {
     //let identityId = this.reqData.userinfo.cognitoIdentityId;
 
@@ -156,7 +132,8 @@ class Restaurant {
         return found;
       });
 
-      dataArray = this.pageOffset(dataArray);
+      dataArray = filter.sortByFilter(this.reqData.queryString, dataArray);
+      dataArray = filter.pageOffset(this.reqData.queryString, dataArray);
 
       //if empty
       if(dataArray.length == 0){

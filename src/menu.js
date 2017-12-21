@@ -5,6 +5,7 @@ let Utils = require('./utils.js');
 let I18n = require('./i18n.js');
 let _ = require('lodash');
 //let S3 = require('./s3');
+let filter = require('./filter.js');
 
 const BRANCH_TABLE_NAME = "Branches";
 const RESTAURANT_TABLE_NAME = "Restaurants";
@@ -64,6 +65,7 @@ class Menus {
         menusData = restaurantMenusData;
       }
       catch(err){
+        console.log("get restaurant error");
         menusData = {
           "items": {},
           "menus": {}
@@ -82,7 +84,7 @@ class Menus {
           }
         }
         catch(err) {
-  
+          console.log("get branch error");
         }
       }
     }
@@ -169,31 +171,6 @@ class Menus {
     return outputData;
   }
 
-  pageOffset(dataArray){
-    let page = 0;
-    let limit = 0;
-    let start = 0;
-    let end = null;
-    if(typeof this.reqData.queryString.page == 'string'){
-      page = parseInt(this.reqData.queryString.page);
-    }      
-    if(typeof this.reqData.queryString.offset == 'string'){
-      limit = parseInt(this.reqData.queryString.offset);
-    }
-    if(page > 0 && limit > 0){
-      //params.Limit = limit;
-      start = (page-1)*limit;
-      end = page*limit;
-    }
-
-    //page offset
-    if((start >= 0) && (end > 0)){
-      dataArray = dataArray.slice(start, end);
-    }
-    
-    return dataArray;
-  }
-
   getMainPhotoUrl(photos){
     let main_photo = {};
     for(let i in photos){
@@ -253,63 +230,70 @@ class Menus {
   }
 
   async get() {
-    let dbMenusData = await this.getMenusData(true);
-    let menusData = dbMenusData.menus;
-    let itemsData = dbMenusData.items;
-
-    //output
-    let dataArray = [];
-    
-    for(let menu_id in menusData) {
-      let menuData = menusData[menu_id];
-
-      //item brief
-      menuData.sections = this.migrateSections(menuData, itemsData);
-
-      //translate
-      let i18n = new I18n.main(menuData, this.idArray);
-      menuData = i18n.translate(this.lang);
-
-      let output = this.outputBrief(menuData, menu_id);
-
-      dataArray.push(output);
+    try{
+      let dbMenusData = await this.getMenusData(true);
+      let menusData = dbMenusData.menus;
+      let itemsData = dbMenusData.items;
+  
+      //output
+      let dataArray = [];
+      
+      for(let menu_id in menusData) {
+        let menuData = menusData[menu_id];
+  
+        //item brief
+        menuData.sections = this.migrateSections(menuData, itemsData);
+  
+        //translate
+        let i18n = new I18n.main(menuData, this.idArray);
+        menuData = i18n.translate(this.lang);
+  
+        let output = this.outputBrief(menuData, menu_id);
+  
+        dataArray.push(output);
+      }
+  
+      dataArray = filter.sortByFilter(this.reqData.queryString, dataArray);
+      dataArray = filter.pageOffset(this.reqData.queryString, dataArray);
+  
+      //if empty
+      if(dataArray.length == 0){
+        let err = new Error("not found");
+        err.statusCode = 404;
+        throw err;
+      }
+      
+      return JSONAPI.makeJSONAPI(TYPE_NAME, dataArray);
     }
-
-    dataArray = this.pageOffset(dataArray);
-
-    //if empty
-    if(dataArray.length == 0){
-      let err = new Error("not found");
-      err.statusCode = 404;
+    catch(err){
       throw err;
     }
-    
-    return JSONAPI.makeJSONAPI(TYPE_NAME, dataArray);
+
   }
 
   async getByID() {
-      try {
-        /*let dbMenusData = await this.getMenusData();
-        let menuData = dbMenusData.menus;
-        let fullID = this.branch_fullID + this.reqData.params.menu_id;
+    try {
+      /*let dbMenusData = await this.getMenusData();
+      let menuData = dbMenusData.menus;
+      let fullID = this.branch_fullID + this.reqData.params.menu_id;
 
-        let data = menuData[fullID];
-        if(typeof data == 'undefined'){
-            let err = new Error("not found");
-            err.statusCode = 404;
-            throw err;
-        }*/
-        let menuData = await this.getMenuData(true);          
-
-        //translate
-        let i18n = new I18n.main(menuData, this.idArray);
-        menuData = i18n.translate(this.lang);  
-
-        let output = this.output(menuData, this.menu_fullID);
-        return JSONAPI.makeJSONAPI(TYPE_NAME, output);
-      }catch(err) {
+      let data = menuData[fullID];
+      if(typeof data == 'undefined'){
+          let err = new Error("not found");
+          err.statusCode = 404;
           throw err;
-      }
+      }*/
+      let menuData = await this.getMenuData(true);          
+
+      //translate
+      let i18n = new I18n.main(menuData, this.idArray);
+      menuData = i18n.translate(this.lang);  
+
+      let output = this.output(menuData, this.menu_fullID);
+      return JSONAPI.makeJSONAPI(TYPE_NAME, output);
+    }catch(err) {
+        throw err;
+    }
   }
 
   async getPhotoInfo() {

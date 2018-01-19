@@ -15,15 +15,6 @@ const B2C_TABLE_NAME = "BranchesB2C";
 
 const TYPE_NAME = "branches";
 
-
-let i18nSchema = {
-    "name": "",
-    "desc": "",
-    "category": "",
-    "details": "",
-    "special_event": [""]
-}
-
 class Branches {
   constructor(reqData){
       this.reqData = reqData;
@@ -45,12 +36,6 @@ class Branches {
     data.id = fullID;
     data.photos = Utils.objToArray(data.photos);
     delete data.branchControl;
-
-    //data.geolocation = {};
-    //data.geolocation.zipcode = data.zipcode;
-    //data.address = data.location.address;
-    //data.tel = data.location.tel;
-    //delete data.location;
 
     return data;
   }
@@ -150,6 +135,11 @@ class Branches {
       try {
           let branchData = await db.queryById(TABLE_NAME, this.branch_fullID);
 
+          //get restaurant name
+          let restaurantData = await db.queryById(RESTAURANT_TABLE_NAME, this.reqData.params.restaurant_id);
+          let restaurant_i18n = new I18n.main(restaurantData, null);
+          restaurantData = restaurant_i18n.translate(this.lang);
+
           //table
           let tableArray = [];
           for(let table_id in branchData.tables){
@@ -160,7 +150,12 @@ class Branches {
           //translate
           let i18n = new I18n.main(branchData, this.idArray);
           branchData = i18n.translate(this.lang);
-
+          branchData.restaurant_name = restaurantData.name;
+          
+          //sync with b2c table
+          branchData.branch_name = branchData.name;
+          //delete branchData.name;
+          
           //output
           let output = this.output(branchData, this.branch_fullID);
           return JSONAPI.makeJSONAPI(TYPE_NAME, output);

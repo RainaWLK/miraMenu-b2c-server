@@ -1,10 +1,9 @@
 let Tables = require('../table.js');
-let API_VERSION = '/v1';
 
 function go(api){
 
 //=========== table =========
-api.get(API_VERSION+'/restaurants/{restaurant_id}/branches/{branch_id}/tables', async (req) => {
+api.get('/restaurants/{restaurant_id}/branches/{branch_id}/tables', async (req) => {
   let cmdObj = new Tables.main(req);
 
   try{
@@ -15,7 +14,7 @@ api.get(API_VERSION+'/restaurants/{restaurant_id}/branches/{branch_id}/tables', 
   }
 });
 
-api.get(API_VERSION+'/restaurants/{restaurant_id}/branches/{branch_id}/tables/{table_id}', async (req) => {
+api.get('/restaurants/{restaurant_id}/branches/{branch_id}/tables/{table_id}', async (req) => {
   let cmdObj = new Tables.main(req);
 
   try{

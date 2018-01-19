@@ -14,15 +14,6 @@ const B2C_TABLE_NAME = "BranchesB2C";
 
 const TYPE_NAME = "branches";
 
-
-let i18nSchema = {
-    "name": "",
-    "desc": "",
-    "category": "",
-    "details": "",
-    "special_event": [""]
-}
-
 class Recommend {
   constructor(reqData){
       this.reqData = reqData;
@@ -147,10 +138,6 @@ class Recommend {
         //translate
         let i18n = new I18n.main(branchData, this.idArray);
         branchData = i18n.translate(this.lang);
-
-        //sync with b2c table
-        branchData.branch_name = branchData.name;
-        delete branchData.name;
 
         return this.outputBrief(branchData, branchData.id);
       });

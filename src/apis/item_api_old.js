@@ -1,10 +1,9 @@
 let Items = require('../item.js');
-let API_VERSION = '/v1';
 
 function go(api){
 
 //=========== Items =========
-api.get(API_VERSION+'/restaurants/{restaurant_id}/branches/{branch_id}/items', async (req) => {
+api.get('/restaurants/{restaurant_id}/branches/{branch_id}/items', async (req) => {
   let cmdObj = new Items.main(req);
 
   try{
@@ -15,7 +14,7 @@ api.get(API_VERSION+'/restaurants/{restaurant_id}/branches/{branch_id}/items', a
   }
 });
 
-api.get(API_VERSION+'/restaurants/{restaurant_id}/branches/{branch_id}/items/{item_id}', async (req) => {
+api.get('/restaurants/{restaurant_id}/branches/{branch_id}/items/{item_id}', async (req) => {
   let cmdObj = new Items.main(req);
 
   try{
@@ -26,7 +25,7 @@ api.get(API_VERSION+'/restaurants/{restaurant_id}/branches/{branch_id}/items/{it
   }
 });
 
-api.get(API_VERSION+'/restaurants/{restaurant_id}/items', async (req) => {
+api.get('/restaurants/{restaurant_id}/items', async (req) => {
   let cmdObj = new Items.main(req);
 
   try{
@@ -37,7 +36,7 @@ api.get(API_VERSION+'/restaurants/{restaurant_id}/items', async (req) => {
   }
 });
 
-api.get(API_VERSION+'/restaurants/{restaurant_id}/items/{item_id}', async (req) => {
+api.get('/restaurants/{restaurant_id}/items/{item_id}', async (req) => {
   let cmdObj = new Items.main(req);
 
   try{
@@ -48,7 +47,7 @@ api.get(API_VERSION+'/restaurants/{restaurant_id}/items/{item_id}', async (req) 
   }
 });
 
-api.get(API_VERSION+'/restaurants/{restaurant_id}/branches/{branch_id}/menus/{menu_id}/items', async (req) => {
+api.get('/restaurants/{restaurant_id}/branches/{branch_id}/menus/{menu_id}/items', async (req) => {
   let cmdObj = new Items.main(req);
 
   try{
@@ -59,7 +58,7 @@ api.get(API_VERSION+'/restaurants/{restaurant_id}/branches/{branch_id}/menus/{me
   }
 });
 
-api.get(API_VERSION+'/restaurants/{restaurant_id}/menus/{menu_id}/items', async (req) => {
+api.get('/restaurants/{restaurant_id}/menus/{menu_id}/items', async (req) => {
   let cmdObj = new Items.main(req);
 
   try{
@@ -71,7 +70,7 @@ api.get(API_VERSION+'/restaurants/{restaurant_id}/menus/{menu_id}/items', async 
 });
 
 //=========== Photos =========
-api.get(API_VERSION+'/restaurants/{restaurant_id}/items/{item_id}/photos/{photo_id}', async (req) => {
+api.get('/restaurants/{restaurant_id}/items/{item_id}/photos/{photo_id}', async (req) => {
   let cmdObj = new Items.main(req);
 
   try{
@@ -82,7 +81,7 @@ api.get(API_VERSION+'/restaurants/{restaurant_id}/items/{item_id}/photos/{photo_
   }
 });
 
-api.get(API_VERSION+'/restaurants/{restaurant_id}/items/{item_id}/photos', async (req) => {
+api.get('/restaurants/{restaurant_id}/items/{item_id}/photos', async (req) => {
   let cmdObj = new Items.main(req);
 
   try{
@@ -95,7 +94,7 @@ api.get(API_VERSION+'/restaurants/{restaurant_id}/items/{item_id}/photos', async
 
 //=============
 
-api.get(API_VERSION+'/restaurants/{restaurant_id}/branches/{branch_id}/items/{item_id}/photos/{photo_id}', async (req) => {
+api.get('/restaurants/{restaurant_id}/branches/{branch_id}/items/{item_id}/photos/{photo_id}', async (req) => {
   let cmdObj = new Items.main(req);
 
   try{
@@ -106,7 +105,7 @@ api.get(API_VERSION+'/restaurants/{restaurant_id}/branches/{branch_id}/items/{it
   }
 });
 
-api.get(API_VERSION+'/restaurants/{restaurant_id}/branches/{branch_id}/items/{item_id}/photos', async (req) => {
+api.get('/restaurants/{restaurant_id}/branches/{branch_id}/items/{item_id}/photos', async (req) => {
   let cmdObj = new Items.main(req);
 
   try{

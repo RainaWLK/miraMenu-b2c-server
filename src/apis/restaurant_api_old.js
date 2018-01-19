@@ -1,10 +1,9 @@
 let Restaurant = require('../restaurant.js');
-let API_VERSION = '/v1';
 
 function go(api){
 
   
-api.get(API_VERSION+'/restaurants/{restaurant_id}', async (req) => {
+api.get('/restaurants/{restaurant_id}', async (req) => {
   let cmdObj = new Restaurant.main(req);
 
   try{
@@ -15,7 +14,7 @@ api.get(API_VERSION+'/restaurants/{restaurant_id}', async (req) => {
   }
 });
 
-api.get(API_VERSION+'/restaurants', async (req) => {
+api.get('/restaurants', async (req) => {
   let cmdObj = new Restaurant.main(req);
 
   try{
@@ -27,7 +26,7 @@ api.get(API_VERSION+'/restaurants', async (req) => {
 });
 
 //========
-api.get(API_VERSION+'/restaurants/{restaurant_id}/photos/{photo_id}', async (req) => {
+api.get('/restaurants/{restaurant_id}/photos/{photo_id}', async (req) => {
   let cmdObj = new Restaurant.main(req);
 
   try{
@@ -39,7 +38,7 @@ api.get(API_VERSION+'/restaurants/{restaurant_id}/photos/{photo_id}', async (req
 });
 
 
-api.get(API_VERSION+'/restaurants/{restaurant_id}/photos', async (req) => {
+api.get('/restaurants/{restaurant_id}/photos', async (req) => {
   let cmdObj = new Restaurant.main(req);
 
   try{

@@ -1,10 +1,9 @@
 let Branches = require('../branch.js');
-let API_VERSION = '/v1';
 
 function go(api){
 
 //=========== branch =========
-api.get(API_VERSION+'/restaurants/{restaurant_id}/branches', async (req) => {
+api.get('/restaurants/{restaurant_id}/branches', async (req) => {
   let cmdObj = new Branches.main(req);
 
   try{
@@ -15,7 +14,7 @@ api.get(API_VERSION+'/restaurants/{restaurant_id}/branches', async (req) => {
   }
 });
 
-api.get(API_VERSION+'/restaurants/{restaurant_id}/branches/{branch_id}', async (req) => {
+api.get('/restaurants/{restaurant_id}/branches/{branch_id}', async (req) => {
   let cmdObj = new Branches.main(req);
 
   try{
@@ -26,7 +25,7 @@ api.get(API_VERSION+'/restaurants/{restaurant_id}/branches/{branch_id}', async (
   }
 });
 
-api.get(API_VERSION+'/branches', async (req) => {
+api.get('/branches', async (req) => {
   let cmdObj = new Branches.main(req);
 
   try{
@@ -38,7 +37,7 @@ api.get(API_VERSION+'/branches', async (req) => {
 });
 
 //========
-api.get(API_VERSION+'/restaurants/{restaurant_id}/branches/{branch_id}/photos/{photo_id}', async (req) => {
+api.get('/restaurants/{restaurant_id}/branches/{branch_id}/photos/{photo_id}', async (req) => {
   let cmdObj = new Branches.main(req);
 
   try{
@@ -49,7 +48,7 @@ api.get(API_VERSION+'/restaurants/{restaurant_id}/branches/{branch_id}/photos/{p
   }
 });
 
-api.get(API_VERSION+'/restaurants/{restaurant_id}/branches/{branch_id}/photos', async (req) => {
+api.get('/restaurants/{restaurant_id}/branches/{branch_id}/photos', async (req) => {
   let cmdObj = new Branches.main(req);
 
   try{

@@ -17,6 +17,19 @@ Menu_API.go(api);
 Item_API.go(api);
 Recommend_API.go(api);
 
+let Restaurant_API_old = require('./apis/restaurant_api_old.js');
+let Branch_API_old = require('./apis/branch_api_old.js');
+//let Table_API_old = require('./apis/table_api_old.js');
+let Menu_API_old = require('./apis/menu_api_old.js');
+let Item_API_old = require('./apis/item_api_old.js');
+let Recommend_API_old = require('./apis/recommend_api_old.js');
+Restaurant_API_old.go(api);
+Branch_API_old.go(api);
+//Table_API_old.go(api);
+Menu_API_old.go(api);
+Item_API_old.go(api);
+Recommend_API_old.go(api);
+
 //for unittest
 //let utils = require('./utils');
 //utils.unittest();

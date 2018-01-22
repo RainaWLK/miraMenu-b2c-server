@@ -48,6 +48,7 @@ class Restaurant {
       "address": "",
       "tel": "",
       "availability": "",
+      "logo_photo_url": {},
       "main_photo_url": {}
     };
 
@@ -59,16 +60,30 @@ class Restaurant {
     outputData.tel = data.tel;
     outputData.availability = (data.availability == false)?false:true;
 
+
+    //logo
+    let logo_photo = {};
+    //main photo
     let main_photo = {};
+    let got_main = false;
     for(let i in data.photos){
-      main_photo = data.photos[i];
-      if(data.photos[i].role == 'main'){
-        break;
+      if(data.photos[i].role === 'logo'){
+        logo_photo = data.photos[i];
+      }
+      else if(data.photos[i].role === 'main'){
+        main_photo = data.photos[i];
+        got_main = true;
+      }
+      else if(got_main === false){
+        main_photo = data.photos[i];
       }
     }
 
     if(main_photo.url !== undefined){
       outputData.main_photo_url = main_photo.url;
+    }
+    if(logo_photo.url !== undefined){
+      outputData.logo_photo_url = logo_photo.url;
     }
       
     return outputData;

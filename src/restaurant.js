@@ -152,9 +152,10 @@ class Restaurant {
 
       //if empty
       if(dataArray.length == 0){
-        let err = new Error("not found");
-        err.statusCode = 404;
-        throw err;
+        //let err = new Error("not found");
+        //err.statusCode = 404;
+        //throw err;
+        return "";
       }
 
       return JSONAPI.makeJSONAPI(TYPE_NAME, dataArray);   
@@ -201,9 +202,10 @@ class Restaurant {
 
     //if empty
     if(dataArray.length == 0){
-        let err = new Error("not found");
-        err.statusCode = 404;
-        throw err;
+      //let err = new Error("not found");
+      //err.statusCode = 404;
+      //throw err;
+      return "";
     }
 
     return JSONAPI.makeJSONAPI("photos", dataArray);

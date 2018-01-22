@@ -122,10 +122,19 @@ class Rest {
 	
 	responseOK(res, msg) {
 		if(DEBUG) {
+			if(msg == ""){
+				res.status(204);
+			}
 			res.send(msg);
 			res.end();
 		}
-		return msg;
+		else {
+			if(msg == ""){
+				return new this.app.ApiResponse("", {'Content-Type': 'text/plain'}, '204');
+			}
+			return msg;
+		}
+		
 	}
 	
 	responseError(res, err) {

@@ -30,7 +30,7 @@ provider:
   runtime: nodejs6.10
 # you can overwrite defaults here
   stage: dev
-  region: us-east-1
+  region: us-west-2
 #  profile: production # The default profile to use with this service
   memorySize: 512 # Overwrite the default memory size. Default is 1024
   versionFunctions: true # optional, default is true

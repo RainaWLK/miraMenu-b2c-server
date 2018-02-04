@@ -3,7 +3,7 @@ let _ = require('lodash');
 let sns = require('./sns.js');
 
 AWS.config.update({
-    region: "us-east-1"
+    region: "us-west-2"
 });
 //const doc = require('dynamodb-doc');
 const docClient = new AWS.DynamoDB.DocumentClient();

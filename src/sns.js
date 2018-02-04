@@ -1,10 +1,10 @@
 let AWS = require('aws-sdk');
 var sns = new AWS.SNS({
   apiVersion: '2010-03-31',
-  region: 'us-east-1'
+  region: 'us-west-2'
 });
 
-const topicArn = 'arn:aws:sns:us-east-1:552950262288:dbCacheSNS';
+const topicArn = 'arn:aws:sns:us-west-2:780139254791:DBCache';
 
 async function sendSNS(msg, attr, subject){
   var params = {

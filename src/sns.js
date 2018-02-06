@@ -4,7 +4,7 @@ var sns = new AWS.SNS({
   region: 'us-west-2'
 });
 
-const topicArn = 'arn:aws:sns:us-west-2:780139254791:DBCache';
+const topicArn = 'arn:aws:sns:us-west-2:780139254791:DBUpdate';
 
 async function sendSNS(msg, attr, subject){
   var params = {

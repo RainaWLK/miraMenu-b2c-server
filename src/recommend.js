@@ -223,6 +223,9 @@ class Recommend {
       if((isNaN(quantity))||(quantity < 0)||(quantity > 100)){
         quantity = 10;
       }
+      if(quantity > idList.length){
+        quantity = idList.length;
+      }
 
       let params = {
         RequestItems: {}

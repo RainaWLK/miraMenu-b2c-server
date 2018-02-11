@@ -2,6 +2,7 @@ let db = require('./dynamodb.js');
 let JSONAPI = require('./jsonapi.js');
 let Utils = require('./utils.js');
 let I18n = require('./i18n.js');
+const redis = require('./redis.js');
 let _ = require('lodash');
 let filter = require('./filter.js');
 let Branches = require('./branch.js');
@@ -131,24 +132,7 @@ class Recommend {
   }
 
   async getItemIDList(){
-    try{
-      var params = {
-        TableName: ITEM_TABLE_NAME,
-        //ProjectionExpression: "#yr, title, info.rating",
-        ExpressionAttributeNames: {
-          "#id": "id"
-        },
-        ProjectionExpression: '#id',
-        ReturnConsumedCapacity: "TOTAL"
-      };
-      let dataArray = await db.scanDataByFilter(params);
-      let result = dataArray.map(itemData => itemData.id);
-      return result;
-    }catch(err) {
-      console.log("==items get err!!==");
-      console.log(err);
-      throw err;
-    }
+    return await genItemIDList();
   }
 
   //quantity, current
@@ -217,43 +201,20 @@ class Recommend {
 
   async getItems() {
     try {
-      let idList = await this.getItemIDList();
+      let dataArray = await redis.hgetall('items_random');
+      console.log(dataArray);
 
       let quantity = parseInt(this.reqData.queryString.quantity, 10);
       if((isNaN(quantity))||(quantity < 0)||(quantity > 100)){
         quantity = 10;
       }
-      if(quantity > idList.length){
-        quantity = idList.length;
+      if(quantity > dataArray.length){
+        quantity = dataArray.length;
       }
 
-      let params = {
-        RequestItems: {}
-      };
-      params.RequestItems[ITEM_TABLE_NAME] = {
-        Keys: []
-      };
-      let keys = params.RequestItems[ITEM_TABLE_NAME].Keys;
+      dataArray = filter.sortByFilter(this.reqData.queryString, dataArray);
+      dataArray = filter.pageOffset(this.reqData.queryString, dataArray);
 
-      let tmp = {};
-
-      for(let i = 0; i < quantity; i++){
-        let num = Math.floor(Math.random() * idList.length);
-        //check existed
-        if(tmp[num] !== undefined){
-          //console.log("skip:"+num);
-          i--;
-          continue;
-        }
-        tmp[num] = 0;
-
-        let id = idList[num];
-
-        keys.push({'id': id});
-      }
-
-      let result = await db.batchGet(params);
-      let dataArray = result.Responses[ITEM_TABLE_NAME];
       dataArray = dataArray.map(itemData => {
         //translate
         let i18n = new I18n.main(itemData, this.idArray);
@@ -261,9 +222,6 @@ class Recommend {
 
         return this.outputItemBrief(itemData, itemData.id);
       });
-
-      dataArray = filter.sortByFilter(this.reqData.queryString, dataArray);
-      dataArray = filter.pageOffset(this.reqData.queryString, dataArray);
 
       //if empty
       if(dataArray.length == 0){
@@ -338,6 +296,45 @@ async function unittest(){
   console.log("time used: "+ (Date.now() - start_time));
 }
 
+async function genItemIDList(){
+  try{
+    var params = {
+      TableName: ITEM_TABLE_NAME,
+      //ProjectionExpression: "#yr, title, info.rating",
+      ExpressionAttributeNames: {
+        "#id": "id"
+      },
+      ProjectionExpression: '#id',
+      ReturnConsumedCapacity: "TOTAL"
+    };
+    let dataArray = await db.scanDataByFilter(params);
+    let result = dataArray.map(itemData => itemData.id);
+    return result;
+  }catch(err) {
+    console.log("==items get err!!==");
+    console.log(err);
+    throw err;
+  }
+}
+
+async function genRecommendItems(key){
+  let dataArray = await db.scan(ITEM_TABLE_NAME);
+
+  //random
+  dataArray.sort((a, b) => {
+    return Math.round(Math.random())
+  });
+  
+  dataArray.map(data => {
+    console.log(data.id);
+  });
+  await redis.hgetall('items_random');
+  let result = await redis.hmset('items_random', dataArray);
+  console.log(result);
+  return result;
+}
+
 
 exports.main = Recommend;
 exports.unittest = unittest;
+exports.genRecommendItems = genRecommendItems;

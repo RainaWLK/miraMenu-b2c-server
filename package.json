@@ -13,7 +13,7 @@
     "serverless_deploy": "serverless deploy -v",
     "serverless_package": "npm run transpile && serverless package",
     "serverless_destroy": "serverless remove",
-    "create": "npm run transpile && claudia create --name MiraMenuB2C --region us-west-2 --api-module build/app --version dev --no-optional-dependencies",
+    "create": "npm run transpile && claudia create --name MiraMenuB2C --region us-west-2 --api-module build/app --version dev --no-optional-dependencies --security-group-ids sg-a9ae7ed6 --subnet-ids subnet-d453888e --role MiraMenuB2C-executor",
     "release": "claudia set-version --version prod",
     "deploy": "npm run transpile && claudia update --version dev --set-env NODE_ENV=production --no-optional-dependencies",
     "start": "npm run transpile && cross-env NODE_ENV=development node build/app.js",
@@ -51,7 +51,8 @@
     "redis": "^2.8.0",
     "request": "^2.83.0",
     "request-promise": "^4.2.2",
-    "request-promise-native": "^1.0.5"
+    "request-promise-native": "^1.0.5",
+    "winston": "^2.4.0"
   },
   "optionalDependencies": {
     "aws-sdk": "^2.128.0"

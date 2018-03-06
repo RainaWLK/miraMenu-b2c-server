@@ -201,8 +201,13 @@ class Recommend {
 
   async getItems() {
     try {
-      let dataArray = await redis.hgetall('items_random');
-      console.log(dataArray);
+      console.log('get recommend items');
+      let cacheData = await redis.getRandomData('items_random');
+      console.log('redis get data done');
+      let dataArray = cacheData.data;
+      if(cacheData.expire <= 0){
+        genRecommendItems('items_random');
+      }
 
       let quantity = parseInt(this.reqData.queryString.quantity, 10);
       if((isNaN(quantity))||(quantity < 0)||(quantity > 100)){
@@ -212,8 +217,10 @@ class Recommend {
         quantity = dataArray.length;
       }
 
+      console.log('sorting');
       dataArray = filter.sortByFilter(this.reqData.queryString, dataArray);
       dataArray = filter.pageOffset(this.reqData.queryString, dataArray);
+      console.log('sorting done');
 
       dataArray = dataArray.map(itemData => {
         //translate
@@ -227,7 +234,7 @@ class Recommend {
       if(dataArray.length == 0){
         return "";
       }
-
+      console.log('output formatting done');
       return JSONAPI.makeJSONAPI(TYPE_NAME, dataArray);       
     }catch(err) {
       console.log("==branch get err!!==");
@@ -319,17 +326,20 @@ async function genItemIDList(){
 
 async function genRecommendItems(key){
   let dataArray = await db.scan(ITEM_TABLE_NAME);
-
+  
   //random
   dataArray.sort((a, b) => {
     return Math.round(Math.random())
   });
   
-  dataArray.map(data => {
-    console.log(data.id);
-  });
-  await redis.hgetall('items_random');
-  let result = await redis.hmset('items_random', dataArray);
+  //let testData = await redis.hgetall('items_random');
+  //console.log(testData);
+  let cacheData = {
+    "expire": "5",
+    "data": JSON.stringify(dataArray)
+  }
+  
+  let result = await redis.hmset(key, cacheData);
   console.log(result);
   return result;
 }

@@ -195,7 +195,9 @@ class Branches {
         ReturnConsumedCapacity: "TOTAL"
       };
 
+      console.log('start scan data by filter');
       let dataArray = await db.scanDataByFilter(params);
+      console.log('start scan data by filter done');
 /*      console.log(`got ${dataArray.length} items...`);
       dataArray = dataArray.map(branchData => {
         //translate
@@ -204,6 +206,7 @@ class Branches {
         return this.outputBrief(branchData, branchData.id);
       });*/
 
+      console.log("filter....");
       dataArray = dataArray.map(branchData => {
         //translate
         let i18n = new I18n.main(branchData, this.idArray);
@@ -261,9 +264,12 @@ class Branches {
       .map(branchData => {
         return this.outputBrief(branchData, branchData.id);
       });
+      console.log('filter done');
 
+      console.log('sorting');
       dataArray = filter.sortByFilter(this.reqData.queryString, dataArray);
       dataArray = filter.pageOffset(this.reqData.queryString, dataArray);
+      console.log('sorting done');
       
       //if empty
       if(dataArray.length == 0){

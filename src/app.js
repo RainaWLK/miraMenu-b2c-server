@@ -1,5 +1,6 @@
 'use strict';
 import 'babel-polyfill'
+require('./logger.js');
 let Rest = require('./rest.js');
 let Restaurant_API = require('./apis/restaurant_api');
 let Branch_API = require('./apis/branch_api');
@@ -36,7 +37,7 @@ Recommend_API_old.go(api);
 //let recommend = require('./recommend');
 //recommend.unittest();
 
-let Recommend = require('./recommend.js');
-Recommend.genRecommendItems();
+//let Recommend = require('./recommend.js');
+//Recommend.genRecommendItems();
 
 module.exports = api.app;

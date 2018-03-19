@@ -25,7 +25,7 @@ api.get(API_VERSION+'/restaurants/{restaurant_id}/branches/{branch_id}/menus/{me
       throw err;
   }
 });
-
+/*
 api.get(API_VERSION+'/restaurants/{restaurant_id}/menus', async (req) => {
   let cmdObj = new Menus.main(req);
 
@@ -47,7 +47,7 @@ api.get(API_VERSION+'/restaurants/{restaurant_id}/menus/{menu_id}', async (req) 
       throw err;
   }
 });
-
+*/
 //=============
 
 api.get(API_VERSION+'/restaurants/{restaurant_id}/menus/{menu_id}/photos/{photo_id}', async (req) => {

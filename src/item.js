@@ -9,7 +9,9 @@ let filter = require('./filter.js');
 
 const BRANCH_TABLE_NAME = "Branches";
 const RESTAURANT_TABLE_NAME = "Restaurants";
-const TABLE_NAME = "Menus";
+const MENU_TABLE_NAME = "Menus";
+//const TABLE_NAME = "Menus";
+const TABLE_NAME = "ItemsB2C";
 
 const TYPE_NAME = "items";
 
@@ -18,23 +20,16 @@ class Items {
   constructor(reqData){
       this.reqData = reqData;
 
-      //store restaurant var
-      this.restaurantTable = RESTAURANT_TABLE_NAME;
-
       this.branchQuery = false;
       if(typeof this.reqData.params.branch_id != 'undefined'){
         this.branchQuery = true;
       }
 
       //parse request
-      this.controlName = "restaurantControl";
       this.branch_fullID = this.reqData.params.restaurant_id;
-      this.branchTable = RESTAURANT_TABLE_NAME;
 
       if(this.branchQuery){
           this.branch_fullID = this.reqData.params.restaurant_id + this.reqData.params.branch_id;
-          this.branchTable = BRANCH_TABLE_NAME;
-          this.controlName = "branchControl";
       }
 
       //id array
@@ -51,56 +46,56 @@ class Items {
   }
 
 
-  async getMenusData(mix){
-    let menusData;
+  async getItemsData(){
+    let itemsData = {};
+
+    try {
+      let params = {
+        TableName: TABLE_NAME,
+        IndexName: 'branch_id-index',
+        KeyConditionExpression: " branch_id = :keyidval",
+        ExpressionAttributeValues: {
+          ":keyidval": this.reqData.params.restaurant_id
+        },
+        ReturnConsumedCapacity: "TOTAL"
+      };
     
-    if(mix){
-      try {
-        let restaurantMenusData = await db.queryById(TABLE_NAME, this.reqData.params.restaurant_id);
-        menusData = restaurantMenusData;
-      }
-      catch(err){
-        menusData = {
-          "items": {},
-          "menus": {}
-        };
-      }
+      let restaurantItemsData = await db.query(params);
+      //let restaurantMenusData = await db.queryById(TABLE_NAME, this.reqData.params.restaurant_id);
+      restaurantItemsData.forEach(element => {
+        itemsData[element.id] = element
+      });
+    }
+    catch(err){}
 
-      if(this.branchQuery){
-        try {
-          let branchMenusData = await db.queryById(TABLE_NAME, this.branch_fullID);
-          //merge
-          for(let id in branchMenusData.menus){
-            menusData.menus[id] = branchMenusData.menus[id];
-          }
-          for(let id in branchMenusData.items){
-            menusData.items[id] = branchMenusData.items[id];
-          }
-        }
-        catch(err) {
+    if(this.branchQuery){
+      try {
+        let params = {
+          TableName: TABLE_NAME,
+          IndexName: 'branch_id-index',
+          KeyConditionExpression: " branch_id = :keyidval",
+          ExpressionAttributeValues: {
+            ":keyidval": this.branch_fullID
+          },
+          ReturnConsumedCapacity: "TOTAL"
+        };
+        let branchItemsData = await db.query(params);
+        branchItemsData.forEach(element => {
+          itemsData[element.id] = element
+        });
+      }
+      catch(err) {
+
+      }
+    }
   
-        }
-      }
-    }
-    else {
-      try {
-        menusData = await db.queryById(TABLE_NAME, this.branch_fullID);
-      }
-      catch(err){
-        menusData = {
-          "items": {},
-          "menus": {}
-        };
-      }
-    }
-
-    return menusData;
+    return itemsData;
   }
 
-  async getItemData(mix){
+  async getItemData(){
     try{
-      let dbMenusData = await this.getMenusData(mix);
-      let itemData = dbMenusData.items[this.item_fullID];
+      let dbItemsData = await this.getItemsData();
+      let itemData = dbItemsData[this.item_fullID];
 
       if(typeof itemData == 'undefined'){
         let err = new Error("not found");
@@ -126,6 +121,8 @@ class Items {
     return {
       "id": fullID,
       "name": data.name,
+      "restaurant_name": data.restaurant_name,
+      "branch_name": data.branch_name,
       "availability": (data.menu_availability == false)?false:true,
       "item_hours": data.item_hours,
       "list_price": data.list_price,
@@ -154,9 +151,8 @@ class Items {
   
 
   async get() {
-    let dbMenusData = await this.getMenusData(true);
-    let itemsData = dbMenusData.items;
-
+    let itemsData = await this.getItemsData();
+    
     //output
     let dataArray = [];
     
@@ -177,9 +173,6 @@ class Items {
 
     //if empty
     if(dataArray.length == 0){
-      //let err = new Error("not found");
-      //err.statusCode = 404;
-      //throw err;
       return "";
     }
 
@@ -188,17 +181,7 @@ class Items {
 
   async getByID() {
       try {
-        /*let dbMenusData = await this.getMenusData(true);
-        let itemData = dbMenusData.items;
-        let fullID = this.branch_fullID + this.reqData.params.item_id;
-
-        let data = itemData[fullID];
-        if(typeof data == 'undefined'){
-            let err = new Error("not found");
-            err.statusCode = 404;
-            throw err;
-        }*/
-        let itemData = await this.getItemData(true);
+        let itemData = await this.getItemData();
 
         //translate
         let i18n = new I18n.main(itemData, this.idArray);
@@ -212,61 +195,77 @@ class Items {
   }
 
   async getMenuItems() {
-    let dbMenusData = await this.getMenusData(true);
-    let itemsData = dbMenusData.items;
+    let menusData = await db.queryById(MENU_TABLE_NAME, this.branch_fullID);
 
     let menu_fullID = this.branch_fullID + this.reqData.params.menu_id;
-    let menuData = dbMenusData.menus[menu_fullID];
+    let menuData = menusData.menus[menu_fullID];
+    
+    if(menuData === undefined){
+      let err = new Error("not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    
+    let item_ids = {};  //id:section_name
+    if(menuData.sections === undefined) {
+      if((Array.isArray(menuData.items))&&(menuData.items.length > 0)) {
+        menuData.items.forEach(id => {
+          item_ids[id] = 'main';
+        });
+      }
+    }
+    else {
+      for(let i in menuData.sections){
+        let item_section = menuData.sections[i];
 
-    if((menuData === undefined)||(itemsData === undefined)){
+        item_section.items.forEach(id => {
+          item_ids[id] = item_section.name;
+        });
+      };
+    }
+    if(_.isEmpty(item_ids)) {
+      let err = new Error("not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    
+    let params = {
+      RequestItems: {}
+    };
+    let keys = [];
+    for(let id in item_ids) {
+      keys.push({
+        id: id
+      })
+    }
+    params.RequestItems[TABLE_NAME] = {
+      Keys: keys
+    };
+
+    let result = await db.batchGet(params);
+    let itemsData = result.Responses[TABLE_NAME];
+
+    if(itemsData === undefined){
       let err = new Error("not found");
       err.statusCode = 404;
       throw err;
     }
 
-    //output   
-    let dataArray;
-    if(menuData.sections === undefined){
-      if((Array.isArray(menuData.items))&&(menuData.items.length > 0)){
-        dataArray = menuData.items.map(item_id => {
-          let itemData = itemsData[item_id];
-    
-          //translate
-          let i18n = new I18n.main(itemData, this.idArray);
-          itemData = i18n.translate(this.lang);
-    
-          return this.outputBrief(itemData, item_id);
-        });
-      }
-    }
-    else{
-      dataArray = [];
-      for(let i in menuData.sections){
-        let item_section = menuData.sections[i];
+    //output
+    let dataArray = itemsData.map(itemData => {
+      let i18n = new I18n.main(itemData, this.idArray);
+      itemData = i18n.translate(this.lang);
 
-        item_section.items.map(item_id => {
-          let itemData = itemsData[item_id];
-
-          //translate
-          let i18n = new I18n.main(itemData, this.idArray);
-          itemData = i18n.translate(this.lang);
-    
-          let output = this.outputBrief(itemData, item_id);
-          output.section_name = item_section.name;
-          dataArray.push(output);
-          return;
-        });
-      }
-    }
+      let output = this.outputBrief(itemData, itemData.id);
+      output.section_name = item_ids[itemData.id];
+      return output;
+    });
 
     dataArray = filter.sortByFilter(this.reqData.queryString, dataArray);
     dataArray = filter.pageOffset(this.reqData.queryString, dataArray);
 
     //if empty
     if(dataArray.length == 0){
-      //let err = new Error("not found");
-      //err.statusCode = 404;
-      //throw err;
       return "";
     }
 
@@ -283,7 +282,7 @@ class Items {
       err.statusCode = 404;
       throw err;
     }*/
-    let itemData = await this.getItemData(true);
+    let itemData = await this.getItemData();
 
     //output
     let dataArray = [];
@@ -321,7 +320,7 @@ class Items {
           err.statusCode = 404;
           throw err;
       }*/
-      let itemData = await this.getItemData(true);
+      let itemData = await this.getItemData();
 
       let photo_id = this.reqData.params.photo_id;
       let photoData = itemData.photos[photo_id];
@@ -342,98 +341,6 @@ class Items {
     }
   }
 
-  async getI18n() {
-    try{
-      let itemData = await this.getItemData(true);
-
-      let i18nUtils = new I18n.main(itemData, this.idArray);
-      let output = i18nUtils.getI18n(this.item_fullID);
-      return output;
-    }catch(err) {
-      throw err;
-    }
-  }
-
-  async getI18nByID() {
-    try {
-      let itemData = await this.getItemData(true);
-
-      let i18nUtils = new I18n.main(itemData, this.idArray);
-      let output = i18nUtils.getI18nByID(this.reqData.params.i18n_id);
-      return output;
-    }catch(err) {
-      throw err;
-    }
-  }
-
-  async getResources() {
-    /*let dbMenusData = await this.getMenusData(true);
-    let fullID = this.branch_fullID + this.reqData.params.item_id;
-    let itemData = dbMenusData.items[fullID];
-
-    if(typeof itemData == 'undefined'){
-      let err = new Error("not found");
-      err.statusCode = 404;
-      throw err;
-    }*/
-    let itemData = await this.getItemData(true);
-
-    //output
-    let dataArray = [];
-
-    let makeResourceArray = function(source, dest, item_fullID){
-        for(let resource_id in source.resources){
-          let resourceData = source.resources[resource_id];
-          resourceData.id = item_fullID+resource_id;
-          dest.push(resourceData);
-        }
-        return;
-    }
-
-    makeResourceArray(itemData, dataArray, this.item_fullID);
-
-    //if empty
-    if(dataArray.length == 0){
-      //let err = new Error("not found");
-      //err.statusCode = 404;
-      //throw err;
-      return "";
-    }
-
-    return JSONAPI.makeJSONAPI("resources", dataArray);
-  }
-
-  async getResourceByID() {
-    try {
-      /*let dbMenusData = await this.getMenusData(true);
-      let fullID = this.branch_fullID + this.reqData.params.item_id;
-      let itemData = dbMenusData.items[fullID];
-
-      if(typeof itemData == 'undefined'){
-          let err = new Error("not found");
-          err.statusCode = 404;
-          throw err;
-      }*/
-      let itemData = await this.getItemData(true);
-
-      let resource_id = this.reqData.params.resource_id;
-      let resourceData = itemData.resources[resource_id];
-
-      if(typeof resourceData == 'undefined'){
-          let err = new Error("not found");
-          err.statusCode = 404;
-          throw err;
-      }
-
-      //output
-      resourceData.id = this.item_fullID+resource_id;
-    　let output = JSONAPI.makeJSONAPI("resources", resourceData);
-
-      return output;
-    }catch(err) {
-      throw err;
-    }
-  }
 
 }
 

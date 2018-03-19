@@ -7,8 +7,7 @@ let _ = require('lodash');
 //let S3 = require('./s3');
 let filter = require('./filter.js');
 
-const BRANCH_TABLE_NAME = "Branches";
-const RESTAURANT_TABLE_NAME = "Restaurants";
+const BRANCH_TABLE_NAME = "BranchesB2C";
 const TABLE_NAME = "Menus";
 
 const TYPE_NAME = "menus";
@@ -25,23 +24,16 @@ class Menus {
   constructor(reqData){
     this.reqData = reqData;
 
-    //store restaurant var
-    this.restaurantTable = RESTAURANT_TABLE_NAME;
-
     this.branchQuery = false;
     if(typeof this.reqData.params.branch_id != 'undefined'){
       this.branchQuery = true;
     }
 
     //parse request
-    //this.controlName = "restaurantControl";
     this.branch_fullID = this.reqData.params.restaurant_id;
-    this.branchTable = RESTAURANT_TABLE_NAME;
     
     if(this.branchQuery){
         this.branch_fullID = this.reqData.params.restaurant_id + this.reqData.params.branch_id;
-        this.branchTable = BRANCH_TABLE_NAME;
-        //this.controlName = "branchControl";
     }
     
     //id array
@@ -57,59 +49,57 @@ class Menus {
     }
   }
 
-  async getMenusData(mix){
-    let menusData;
-    if(mix){
-      try {
-        let restaurantMenusData = await db.queryById(TABLE_NAME, this.reqData.params.restaurant_id);
-        menusData = restaurantMenusData;
-      }
-      catch(err){
-        console.log("get restaurant error");
-        menusData = {
-          "items": {},
-          "menus": {}
-        };
-      }
-  
-      if(this.branchQuery){
-        try {
-          let branchMenusData = await db.queryById(TABLE_NAME, this.branch_fullID);
-          //merge
-          for(let id in branchMenusData.menus){
-            menusData.menus[id] = branchMenusData.menus[id];
-          }
-          for(let id in branchMenusData.items){
-            menusData.items[id] = branchMenusData.items[id];
-          }
-        }
-        catch(err) {
-          console.log("get branch error");
-        }
-      }
+  async getMenusData(){
+    let menusData = {};
+    try {
+      let branchData = await db.queryById(BRANCH_TABLE_NAME, this.branch_fullID);
+      //translate
+      let i18n = new I18n.main(branchData, this.idArray);
+      menusData.branch = i18n.translate(this.lang);
     }
-    else {
+    catch(err) {
+      let errMsg = new Error("not found");
+      errMsg.statusCode = 404;
+      throw errMsg;
+    }
+    
+    try {
+      let restaurantMenusData = await db.queryById(TABLE_NAME, this.reqData.params.restaurant_id);
+      menusData.items = restaurantMenusData.items;
+      menusData.menus = restaurantMenusData.menus;
+    }
+    catch(err){
+      console.log("no restaurant menu");
+      menusData.items = {};
+      menusData.menus = {};
+    }
+
+    if(this.branchQuery){
       try {
-        menusData = await db.queryById(TABLE_NAME, this.branch_fullID);
+        let branchMenusData = await db.queryById(TABLE_NAME, this.branch_fullID);
+        //merge
+        for(let id in branchMenusData.menus){
+          menusData.menus[id] = branchMenusData.menus[id];
+        }
+        for(let id in branchMenusData.items){
+          menusData.items[id] = branchMenusData.items[id];
+        }
       }
-      catch(err){
-        menusData = {
-          "items": {},
-          "menus": {}
-        };
+      catch(err) {
+        console.log("get branch error");
       }
     }
 
     return menusData;
   }
 
-  async getMenuData(mix){
+  async getMenuData(){
     try{
-      let dbMenusData = await this.getMenusData(mix);
+      let dbMenusData = await this.getMenusData();
       let menuData = dbMenusData.menus[this.menu_fullID];
       let itemsData = dbMenusData.items;      
 
-      if(typeof menuData == 'undefined'){
+      if(menuData === undefined){
         let err = new Error("not found");
         err.statusCode = 404;
         throw err;
@@ -117,6 +107,9 @@ class Menus {
 
       menuData.sections = this.migrateSections(menuData, itemsData);
       delete menuData.items;
+      
+      menuData.restaurant_name = dbMenusData.branch.restaurant_name;
+      menuData.branch_name = dbMenusData.branch.branch_name;
 
       return menuData;
     }
@@ -161,6 +154,8 @@ class Menus {
     let outputData = {
       "id": fullID,
       "name": data.name,
+      "restaurant_name": data.restaurant_name,
+      "branch_name": data.branch_name,
       "category": data.category,
       "availability": (data.availability == false)?false:true,
       "menu_hours": data.menu_hours,
@@ -231,7 +226,7 @@ class Menus {
 
   async get() {
     try{
-      let dbMenusData = await this.getMenusData(true);
+      let dbMenusData = await this.getMenusData();
       let menusData = dbMenusData.menus;
       let itemsData = dbMenusData.items;
   
@@ -240,6 +235,9 @@ class Menus {
       
       for(let menu_id in menusData) {
         let menuData = menusData[menu_id];
+        
+        menuData.restaurant_name = dbMenusData.branch.restaurant_name;
+        menuData.branch_name = dbMenusData.branch.branch_name;
   
         //item brief
         menuData.sections = this.migrateSections(menuData, itemsData);
@@ -258,9 +256,6 @@ class Menus {
   
       //if empty
       if(dataArray.length == 0){
-        //let err = new Error("not found");
-        //err.statusCode = 404;
-        //throw err;
         return "";
       }
       
@@ -274,17 +269,7 @@ class Menus {
 
   async getByID() {
     try {
-      /*let dbMenusData = await this.getMenusData();
-      let menuData = dbMenusData.menus;
-      let fullID = this.branch_fullID + this.reqData.params.menu_id;
-
-      let data = menuData[fullID];
-      if(typeof data == 'undefined'){
-          let err = new Error("not found");
-          err.statusCode = 404;
-          throw err;
-      }*/
-      let menuData = await this.getMenuData(true);          
+      let menuData = await this.getMenuData();          
 
       //translate
       let i18n = new I18n.main(menuData, this.idArray);
@@ -307,7 +292,7 @@ class Menus {
       err.statusCode = 404;
       throw err;
     }*/
-    let menuData = await this.getMenuData(true);
+    let menuData = await this.getMenuData();
 
     //output
     let dataArray = [];
@@ -345,7 +330,7 @@ class Menus {
           err.statusCode = 404;
           throw err;
       }*/
-      let menuData = await this.getMenuData(true);
+      let menuData = await this.getMenuData();
 
       let photo_id = this.reqData.params.photo_id;
       let photoData = menuData.photos[photo_id];
@@ -366,47 +351,6 @@ class Menus {
     }
   }
 
-  async getI18n() {
-    try{
-      /*let dbMenusData = await this.getMenusData();
-      let fullID = this.branch_fullID + this.reqData.params.menu_id;
-      let menuData = dbMenusData.menus[fullID];
-
-      if(typeof menuData == 'undefined'){
-        let err = new Error("not found");
-        err.statusCode = 404;
-        throw err;
-      }*/
-      let menuData = await this.getMenuData(true);
-
-      let i18nUtils = new I18n.main(menuData, this.idArray);
-      let output = i18nUtils.getI18n(this.menu_fullID);
-      return output;
-    }catch(err) {
-      throw err;
-    }
-  }
-
-  async getI18nByID() {
-    try {
-      /*let dbMenusData = await this.getMenusData();
-      let fullID = this.branch_fullID + this.reqData.params.menu_id;
-      let menuData = dbMenusData.menus[fullID];
-
-      if(typeof menuData == 'undefined'){
-          let err = new Error("not found");
-          err.statusCode = 404;
-          throw err;
-      }*/
-      let menuData = await this.getMenuData(true);
-
-      let i18nUtils = new I18n.main(menuData, this.idArray);
-      let output = i18nUtils.getI18nByID(this.reqData.params.i18n_id);
-      return output;
-    }catch(err) {
-      throw err;
-    }
-  }
 
 }
 

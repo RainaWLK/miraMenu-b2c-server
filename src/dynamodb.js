@@ -272,7 +272,8 @@ async function batchGet(params){
 async function sendBatchGet(params, output) {
   try {
     let result = await docClient.batchGet(params).promise();
-    console.log("Batch get succeeded:", JSON.stringify(result, null, 2));
+    console.log("Batch get succeeded");
+    //console.log("Batch get succeeded:", JSON.stringify(result, null, 2));
     
     //combine output
     if((typeof output === 'object') && (typeof output.Responses === 'object')) {

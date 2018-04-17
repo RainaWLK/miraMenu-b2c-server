@@ -7,11 +7,12 @@ let I18n = require('./i18n.js');
 let _ = require('lodash');
 //let S3 = require('./s3');
 let filter = require('./filter.js');
+let es = require('./elasticsearch.js');
 
 const TABLE_NAME = "Branches";
 const RESTAURANT_TABLE_NAME = "Restaurants";
 
-const B2C_TABLE_NAME = "BranchesB2C";
+const B2C_TABLE_NAME = "BranchesB2C_dev";
 
 const TYPE_NAME = "branches";
 
@@ -181,30 +182,67 @@ class Branches {
 
   async searchBranches() { 
     try {
+      let body = {
+        size: 20,
+        from: 0,
+        query: {
+          multi_match: {
+            query: this.reqData.queryString.keyword,
+            fields: ['restaurant_name', 'branch_name',  'category', 'address'],
+            fuzziness: 1
+          }
+        }
+      };
+      
+      let targets = await es.search('branches', body);
+      if(_.isEmpty(targets)) {
+        return "";
+      }
+      
+      let params = {
+        RequestItems: {}
+      };
+      params.RequestItems[B2C_TABLE_NAME] = {
+        Keys: targets.map(id => {
+          return {'id': id}
+        })
+      };
+
+      let result = await db.batchGet(params);
+      let dataArray = result.Responses[B2C_TABLE_NAME];
+      
+      dataArray = dataArray.map(branchData => {
+        branchData.id = branchData.branch_id;
+        return this.outputBrief(branchData, branchData.id);
+      });
+/*      
+      
       let params = {
         TableName: B2C_TABLE_NAME,
-        //FilterExpression: "contains(#branchName, :k) or contains(#restaurantName, :k) or contains(#category, :k)",
-        //ExpressionAttributeNames:{
-        //    "#branchName": "branch_name",
-        //    "#restaurantName": "restaurant_name",
-        //    "#category": "category"
-        //},
+        //FilterExpression: 'contains(restaurant_name, :r) or contains(branch_name, :r) or contains(category, :r)',
         //ExpressionAttributeValues: {
-        //    ":k": this.reqData.queryString.keyword
+        //    ":r": this.reqData.queryString.keyword
         //},
         ReturnConsumedCapacity: "TOTAL"
       };
 
-      console.log('start scan data by filter');
+      console.log('start query data 1');
       let dataArray = await db.scanDataByFilter(params);
-      console.log('start scan data by filter done');
-/*      console.log(`got ${dataArray.length} items...`);
+      console.log('start query data 1 done');
+      console.log(dataArray);
+      //console.log('-------------------1--------------------');
+      //console.log(dataArray_b);
+      //console.log('-------------------2--------------------');
+      //console.log(dataArray_c);
+      console.log(`got ${dataArray.length} items...`);
       dataArray = dataArray.map(branchData => {
         //translate
         let i18n = new I18n.main(branchData, this.idArray);
         branchData = i18n.translate(this.lang);
+        //branchData.id = branchData.branch_id;
+        //delete branchData.branch_id;
         return this.outputBrief(branchData, branchData.id);
-      });*/
+      });
 
       console.log("filter....");
       dataArray = dataArray.map(branchData => {
@@ -265,7 +303,7 @@ class Branches {
         return this.outputBrief(branchData, branchData.id);
       });
       console.log('filter done');
-
+*/
       console.log('sorting');
       dataArray = filter.sortByFilter(this.reqData.queryString, dataArray);
       dataArray = filter.pageOffset(this.reqData.queryString, dataArray);
@@ -273,9 +311,6 @@ class Branches {
       
       //if empty
       if(dataArray.length == 0){
-        //let err = new Error("not found");
-        //err.statusCode = 404;
-        //throw err;
         return "";
       }
 

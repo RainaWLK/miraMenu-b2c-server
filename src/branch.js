@@ -12,7 +12,7 @@ let es = require('./elasticsearch.js');
 const TABLE_NAME = "Branches";
 const RESTAURANT_TABLE_NAME = "Restaurants";
 
-const B2C_TABLE_NAME = "BranchesB2C_dev";
+const B2C_TABLE_NAME = "BranchesB2C";
 
 const TYPE_NAME = "branches";
 
@@ -63,6 +63,7 @@ class Branches {
     //main photo
     let main_photo = {};
     let got_main = false;
+    //bug: must use restaurant photo if no photo here
     for(let i in data.photos){
       if(data.photos[i].role === 'logo'){
         logo_photo = data.photos[i];
@@ -207,8 +208,9 @@ class Branches {
           return {'id': id}
         })
       };
-
+      console.log(params);
       let result = await db.batchGet(params);
+      console.log(result);
       let dataArray = result.Responses[B2C_TABLE_NAME];
       
       dataArray = dataArray.map(branchData => {
@@ -305,8 +307,11 @@ class Branches {
       console.log('filter done');
 */
       console.log('sorting');
+      console.log(dataArray);
       dataArray = filter.sortByFilter(this.reqData.queryString, dataArray);
+      console.log(dataArray);
       dataArray = filter.pageOffset(this.reqData.queryString, dataArray);
+      console.log(dataArray);
       console.log('sorting done');
       
       //if empty

@@ -5,6 +5,15 @@ function parseID(input){
   if(_.isEmpty(input)){
     return result;
   }
+  //language code
+  let lang = null;
+  let langIndex = input.search(/_.+-.+$/);
+  if(langIndex > 0) {
+    result.language = input.substr(langIndex+1);
+    input = input.substr(0, langIndex);
+  }
+  
+  //restaurant id
   let typeArray = input.match(/res|[rstmip]/g);
   //res must be the last type
   let resIndex = typeArray.indexOf('res');
@@ -151,6 +160,9 @@ function unittest(){
   runTest('r201700700s1res-file-1505637455303');
   runTest('r201700700res-file-1505637455303');
   runTest('{restaurant_id}{branch_id}{item_id}'); //bug
+  runTest('r1515316110281s1515320809386_en-US');
+  runTest('r1506677028397s1506677029086_en-us');
+  runTest('r1508838080893s1508838339538i1508838872911_zh-TW');
 }
 
 exports.parseID = parseID;

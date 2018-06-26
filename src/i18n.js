@@ -178,4 +178,42 @@ class I18n {
 
 }
 
+function selectDataByLang(sourceDataArray, lang) {
+  let targetDataArray = [];
+  if(typeof lang === 'string') {
+    targetDataArray = sourceDataArray.filter(element => element.language.toLowerCase()===lang.toLowerCase());
+  }
+
+  if(targetDataArray.length === 0) {
+    //get default
+    let defaultLang = sourceDataArray[0].i18n.default.toLowerCase();
+    
+    //group by id
+    let idGroup = {};
+    sourceDataArray.forEach(element => {
+      let id = element.id.substring(0, element.id.lastIndexOf('_'));
+      let defaultLang = element.i18n.default.toLowerCase();
+
+      if(idGroup[id] === undefined) {
+        idGroup[id] = {
+          'default': defaultLang,
+          'data': []
+        };
+      }
+      
+      idGroup[id].data.push(element);
+    });
+
+    for(let i in idGroup) {
+      let idData = idGroup[i];
+      let target = idData.data.find(element => element.language.toLowerCase()===idData.default);
+
+      targetDataArray.push(target);
+    }
+  
+  }
+  return targetDataArray;
+}
+
 exports.main = I18n;
+exports.selectDataByLang = selectDataByLang;

@@ -50,43 +50,28 @@ class Items {
     let itemsData = {};
 
     try {
-      let params = {
-        TableName: TABLE_NAME,
-        IndexName: 'branch_id-index',
-        KeyConditionExpression: " branch_id = :keyidval",
-        ExpressionAttributeValues: {
-          ":keyidval": this.reqData.params.restaurant_id
-        },
-        ReturnConsumedCapacity: "TOTAL"
-      };
-    
-      let restaurantItemsData = await db.query(params);
+      let restaurantItemsData = await db.queryByKey(TABLE_NAME, "branch_id-index", 'branch_id', this.reqData.params.restaurant_id);
+
+      let items_translated = I18n.selectDataByLang(restaurantItemsData, this.lang);
       //let restaurantMenusData = await db.queryById(TABLE_NAME, this.reqData.params.restaurant_id);
-      restaurantItemsData.forEach(element => {
-        itemsData[element.id] = element
+      items_translated.forEach(element => {
+        element.id = element.item_id;
+        itemsData[element.id] = element;
       });
     }
     catch(err){}
 
     if(this.branchQuery){
       try {
-        let params = {
-          TableName: TABLE_NAME,
-          IndexName: 'branch_id-index',
-          KeyConditionExpression: " branch_id = :keyidval",
-          ExpressionAttributeValues: {
-            ":keyidval": this.branch_fullID
-          },
-          ReturnConsumedCapacity: "TOTAL"
-        };
-        let branchItemsData = await db.query(params);
-        branchItemsData.forEach(element => {
-          itemsData[element.id] = element
+        let branchItemsData = await db.queryByKey(TABLE_NAME, "branch_id-index", 'branch_id', this.branch_fullID);
+
+        let branchItems_translated = I18n.selectDataByLang(branchItemsData, this.lang);
+        branchItems_translated.forEach(element => {
+          element.id = element.item_id;
+          itemsData[element.id] = element;
         });
       }
-      catch(err) {
-
-      }
+      catch(err) {}
     }
   
     return itemsData;
@@ -160,8 +145,8 @@ class Items {
         let itemData = itemsData[item_id];
 
         //translate
-        let i18n = new I18n.main(itemData, this.idArray);
-        itemData = i18n.translate(this.lang);
+        //let i18n = new I18n.main(itemData, this.idArray);
+        //itemData = i18n.translate(this.lang);
 
         let output = this.outputBrief(itemData, item_id);
 
@@ -184,8 +169,8 @@ class Items {
         let itemData = await this.getItemData();
 
         //translate
-        let i18n = new I18n.main(itemData, this.idArray);
-        itemData = i18n.translate(this.lang);
+        //let i18n = new I18n.main(itemData, this.idArray);
+        //itemData = i18n.translate(this.lang);
 
         let output = this.output(itemData, this.item_fullID);
         return JSONAPI.makeJSONAPI(TYPE_NAME, output);

@@ -52,12 +52,16 @@ class Menus {
   async getMenusData(){
     let menusData = {};
     try {
-      let branchData = await db.queryById(BRANCH_TABLE_NAME, this.branch_fullID);
+      let branchDataArray = await db.queryByKey(BRANCH_TABLE_NAME, "branch_id-index", 'branch_id', this.branch_fullID);
       //translate
-      let i18n = new I18n.main(branchData, this.idArray);
-      menusData.branch = i18n.translate(this.lang);
+      let branch_translated = I18n.selectDataByLang(branchDataArray, this.lang);
+      menusData.branch = branch_translated[0];
+      menusData.branch.id = menusData.branch.branch_id;
+      
+      console.log(menusData);
     }
     catch(err) {
+      console.log(err);
       let errMsg = new Error("not found");
       errMsg.statusCode = 404;
       throw errMsg;

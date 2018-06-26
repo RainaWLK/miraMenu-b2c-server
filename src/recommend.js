@@ -167,7 +167,7 @@ class Recommend {
 
         let id = idList[num];
 
-        keys.push({'id': id});
+        keys.push({'branch_id': id});
       }
 
       let result = await db.batchGet(params);

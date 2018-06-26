@@ -1,6 +1,5 @@
 let AWS = require('aws-sdk');
 let _ = require('lodash');
-let sns = require('./sns.js');
 
 AWS.config.update({
     region: "us-west-2"
@@ -41,19 +40,46 @@ async function queryDataById(tableName, id){
 
 }
 
-function queryDataByName(tableName, name){
-    var params = {
-        TableName : tableName,
-        KeyConditionExpression: "#n = :n",
-        ExpressionAttributeNames:{
-            "#n": "name"
-        },
-        ExpressionAttributeValues: {
-            ":n":name
-        }
-    };
+async function queryByKey(tableName, indexName, keyName, key, filterParams){
+  var params = {
+    TableName : tableName,
+    KeyConditionExpression: "#key = :key",
+    ExpressionAttributeNames:{
+        "#key": keyName
+    },
+    ExpressionAttributeValues: {
+        ":key":key
+    },
+    ReturnConsumedCapacity: "TOTAL"
+  };
 
-    return queryData(params);
+  if(indexName !== null) {
+    params.IndexName = indexName;
+  }
+  if(typeof filterParams === 'object') {
+    for(let i in filterParams.ExpressionAttributeNames) {
+      params.ExpressionAttributeNames[i] = filterParams.ExpressionAttributeNames[i];
+    }
+    for(let i in filterParams.ExpressionAttributeValues) {
+      params.ExpressionAttributeValues[i] = filterParams.ExpressionAttributeValues[i];
+    }
+    params.FilterExpression = filterParams.FilterExpression;
+  }
+
+  try {
+    let dataArray = await queryData(params);
+    if(dataArray.length == 0) {
+      let err = new Error("not found");
+      err.statusCode = 404;
+      throw err;
+    }
+
+    return dataArray;
+  }
+  catch(err) {
+      throw err;
+  }
+
 }
 
 async function queryData(params) {
@@ -132,7 +158,6 @@ function postData(tableName, data){
 
       docClient.put(params).promise().then(async result => {
           console.log("Added item:", JSON.stringify(result, null, 2));
-          await sendSNS(tableName, "POST", inputData);
           resolve(result);
       }).catch(err => {
           console.error("Unable to add item. Error JSON:", JSON.stringify(err, null, 2));
@@ -178,7 +203,6 @@ function putData(tableName, data){
           console.log("UpdateItem succeeded:", JSON.stringify(inputData, null, 2));
           let outputData = result.Attributes;
           outputData.id = inputData.id;
-          await sendSNS(tableName, "PUT", outputData);
           resolve(outputData);
         }).catch(err => {
           console.error("Unable to update item. Error JSON:", JSON.stringify(err, null, 2));
@@ -204,7 +228,6 @@ function deleteData(tableName, data){
     return new Promise((resolve, reject) => {
         docClient.delete(params).promise().then(async result => {
             console.log("DeleteItem succeeded:", JSON.stringify(result, null, 2));
-            await sendSNS(tableName, "DELETE", data);
             resolve(result);
         }).catch(err => {
             console.error("Unable to delete item. Error JSON:", JSON.stringify(err, null, 2));
@@ -307,14 +330,14 @@ function batchWrite(params){
   });
 }
 
-async function sendSNS(tableName, method, data){
+/*async function sendSNS(tableName, method, data){
   let attr = {
     "table": tableName,
     "method": method,
     "id": data.id
   }
   return await sns.sendSNS(data, attr, "DBCache");
-}
+}*/
 
 async function unittest(){
   let table = "photo_tmp";
@@ -357,7 +380,7 @@ async function unittest(){
 }
 
 exports.queryById = queryDataById;
-exports.queryDataByName = queryDataByName;
+exports.queryByKey = queryByKey;
 exports.query = queryData;
 exports.scan = scanData;
 exports.post = postData;

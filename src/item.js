@@ -12,6 +12,7 @@ const RESTAURANT_TABLE_NAME = "Restaurants";
 const MENU_TABLE_NAME = "Menus";
 //const TABLE_NAME = "Menus";
 const TABLE_NAME = "ItemsB2C";
+const COMMENT_TABLE_NAME = "UserComment";
 
 const TYPE_NAME = "items";
 
@@ -19,6 +20,7 @@ const TYPE_NAME = "items";
 class Items {
   constructor(reqData){
       this.reqData = reqData;
+      console.log(this.reqData.userinfo);
 
       this.branchQuery = false;
       if(typeof this.reqData.params.branch_id != 'undefined'){
@@ -255,6 +257,38 @@ class Items {
     }
 
     return JSONAPI.makeJSONAPI(TYPE_NAME, dataArray);
+  }
+
+  async postComment(payload) {
+    let inputData = payload;
+
+    try{
+      let itemData = await this.getItemData();
+      console.log(itemData);
+
+      let timestamp = Date.now();
+      let id = this.item_fullID + '_' + timestamp;
+
+      let itemCommentData = {
+        id: id,
+        object_id: this.item_fullID,
+        identityId: this.reqData.userinfo.cognitoIdentityId,
+        data: payload.data,
+        date: timestamp
+      }
+      console.log(itemCommentData);
+      let msg = await db.post(COMMENT_TABLE_NAME, itemCommentData);
+
+      //output
+      let output = {
+        message: "OK"
+      };
+      return JSONAPI.makeJSONAPI(TYPE_NAME, output);
+    }
+    catch(err) {
+      console.log(err);
+      throw err;
+    }
   }
 
   async getPhotoInfo() {

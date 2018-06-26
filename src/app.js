@@ -1,5 +1,5 @@
 'use strict';
-import 'babel-polyfill'
+//import 'babel-polyfill'
 //require('./logger.js');
 let Rest = require('./rest.js');
 let Restaurant_API = require('./apis/restaurant_api');

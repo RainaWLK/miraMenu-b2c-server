@@ -8,14 +8,15 @@
   "main": "build/app.js",
   "repository": "https://git-codecommit.us-east-1.amazonaws.com/v1/repos/miraMenu",
   "scripts": {
-    "transpile": "babel src -d build",
+    "transpile_babel": "babel src -d build",
+    "transpile": "rm -Rf build && mkdir build && cp -R src/* build/",
     "test": "mocha --compilers js:babel-core/register --require babel-polyfill --timeout 15000",
     "serverless_deploy": "serverless deploy -v",
     "serverless_package": "npm run transpile && serverless package",
     "serverless_destroy": "serverless remove",
     "create": "npm run transpile && claudia create --name MiraMenuB2C --region us-west-2 --api-module build/app --version dev --no-optional-dependencies --security-group-ids sg-a9ae7ed6 --subnet-ids subnet-d453888e --role MiraMenuB2C-executor",
     "release": "claudia set-version --version prod",
-    "deploy": "npm run transpile && claudia update --version dev --set-env NODE_ENV=production --no-optional-dependencies",
+    "deploy": "npm run transpile && claudia update --version dev --set-env NODE_ENV=production --runtime nodejs8.10 --no-optional-dependencies",
     "start": "npm run transpile && cross-env NODE_ENV=development node build/app.js",
     "help": "claudia --help",
     "destroy": "claudia destroy"

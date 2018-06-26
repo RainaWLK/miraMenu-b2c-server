@@ -49,9 +49,10 @@ function makeReqData(req) {
     //reqData.paths = req.path.split('/');
     //reqData.params = (req.pathParameters===null)?{}:req.pathParameters;
     //reqData.queryString = (req.queryStringParameters===null)?{}:req.queryStringParameters;
-    console.log(reqData);
-    reqData.method = req.httpMethod;
-    reqData.resource = req.resource;
+    console.log(req);
+    console.log(req.context);
+    reqData.method = req.context.method;
+    reqData.resource = req.context.path;
     
     reqData.paths = req.proxyRequest.path.split('/');
     reqData.params = req.pathParams;
@@ -213,8 +214,8 @@ class Rest {
     }
     else {
       await this.app.post(uri, action, {
-        //authorizationType: 'AWS_IAM',
-        //invokeWithCredentials: true,
+        authorizationType: 'AWS_IAM',
+        invokeWithCredentials: true,
         success: { code: 201 }
       });
     }
@@ -242,8 +243,8 @@ class Rest {
     }
     else {
       await this.app.patch(uri, action, {
-        //authorizationType: 'AWS_IAM',
-        //invokeWithCredentials: true,
+        authorizationType: 'AWS_IAM',
+        invokeWithCredentials: true,
         success: { code: 200 }
       });
     }
@@ -271,8 +272,8 @@ class Rest {
     }
     else {
       await this.app.delete(uri, action, {
-        //authorizationType: 'AWS_IAM',
-        //invokeWithCredentials: true,
+        authorizationType: 'AWS_IAM',
+        invokeWithCredentials: true,
         success: { code: 204 }
       });
     }

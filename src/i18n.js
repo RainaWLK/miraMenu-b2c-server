@@ -21,10 +21,11 @@ class I18n {
     }
     //get lang pack
     let langPack = this.dbData.i18n[lang];
+    let defaultPack = this.dbData.i18n[this.dbData.i18n.default];
     if(typeof langPack !== 'object'){
       //use default
       outputLang = this.dbData.i18n.default;
-      langPack = this.dbData.i18n[outputLang];
+      langPack = defaultPack;
       
       //for compitable
       if(langPack === undefined){
@@ -38,7 +39,7 @@ class I18n {
       if((typeof element == 'string')&&(element.indexOf(header) == 0)){
         let key = element.substring(header.length);
         if(key.indexOf('res-i18n-') == 0){
-          element = this.getStr(langPack, key);
+          element = this.getStr(langPack, defaultPack, key);
         }
       }
       else if(typeof element == 'object'){
@@ -56,15 +57,17 @@ class I18n {
     return this.dbData;
   }
 
-  getStr(langPack, key){
-    //console.log("getStr: lang="+lang);
-    //console.log(key);
+  getStr(langPack, defaultPack, key){
     let i18nStr = langPack[key];
 
     if(typeof i18nStr === 'string'){
       return i18nStr;
     }
     else {
+      i18nStr = defaultPack[key];
+      if(typeof i18nStr === 'string'){
+        return i18nStr;
+      }
       return "";
     }
   }

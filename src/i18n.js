@@ -114,8 +114,12 @@ class I18n {
           if((typeof dbDataElement === 'string')&&(dbDataElement.indexOf(header) === 0)){
             key = dbDataElement.substring(header.length);
             let defaultLang = inputData.i18n.default;
-            if(typeof this.dbData.i18n[defaultLang][key] === 'string'){
-              i18nExisted = true;
+            for(let i in this.dbData.i18n) {
+              let someLang = this.dbData.i18n[i];
+              if(typeof someLang[key] === 'string') {
+                i18nExisted = true;
+                break;
+              }
             }
           }
 

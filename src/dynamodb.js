@@ -315,19 +315,52 @@ async function sendBatchGet(params, output) {
   }
 }
 
-function batchWrite(params){
-  return new Promise((resolve, reject) => {
-    params = fixEmptyValue(params);
-
-    console.log(params);
-    docClient.batchWrite(params).promise().then(result => {
+async function batchWrite(inputParams){
+  let runBatchWrite = async (params) => {
+    try {
+      console.log(params);
+      let result = await docClient.batchWrite(params).promise();
       console.log("Batch write succeeded:", JSON.stringify(result, null, 2));
-      resolve(result);
-    }).catch(err => {
+      return result;
+    }
+    catch(err) {
       console.error("Batch write fail. Error JSON:", JSON.stringify(err, null, 2));
-      reject(err);
-    });
-  });
+      throw err;
+    }
+  };
+  
+  
+  try {
+    inputParams = fixEmptyValue(inputParams);
+    
+    let outputParams = {
+      RequestItems: {}
+    };
+    let count = 0;
+    let result = null;
+    for(let table in inputParams.RequestItems) {
+      outputParams.RequestItems[table] = [];
+      
+      for(let i in inputParams.RequestItems[table]) {
+        let data = inputParams.RequestItems[table][i];
+        outputParams.RequestItems[table].push(data);
+        count++;
+        //batchWrite limit 25
+        if(count >= 25){
+          result = await runBatchWrite(outputParams);
+          outputParams.RequestItems[table] = [];
+          count = 0;
+        }
+      }
+      result = await runBatchWrite(outputParams);
+      delete outputParams.RequestItems[table];
+      count = 0;
+    }
+    return result;
+  }
+  catch(err) {
+    throw err;
+  }
 }
 
 /*async function sendSNS(tableName, method, data){

@@ -101,7 +101,7 @@ class Rest {
       this.app.options("*", cors());
       this.app.use("/", express.static(path.join(__dirname, '../www')));
 
-        let server = this.app.listen(8082, () => {
+        let server = this.app.listen(8081, () => {
             let host = server.address().address;
             let port = server.address().port;
        

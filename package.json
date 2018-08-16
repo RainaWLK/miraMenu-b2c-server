@@ -10,7 +10,7 @@
   "scripts": {
     "transpile_babel": "babel src -d build",
     "transpile": "rm -Rf build && mkdir build && cp -R src/* build/",
-    "test": "mocha --compilers js:babel-core/register --require babel-polyfill --timeout 15000",
+    "test": "mocha test/i18n.js --timeout 15000",
     "serverless_deploy": "serverless deploy -v",
     "serverless_package": "npm run transpile && serverless package",
     "serverless_destroy": "serverless remove",

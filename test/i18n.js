@@ -85,6 +85,24 @@ describe('i18n test', () => {
     //
   });
 
+  describe('select lang which no one have', () => {
+    let source = _.cloneDeep(sample);
+    let lang = 'RU';
+    let translatedArray = i18n.selectDataByLang(source, lang);
+    console.log(translatedArray);
+
+    it('should an array', () => {
+      expect(translatedArray).to.be.an('array');
+      expect(translatedArray).to.have.lengthOf(2);
+    });
+    it(`should be correct language: default`, () => {
+      translatedArray.forEach(translatedData => {
+        let defaultLang = translatedData.i18n.default;
+        expect(translatedData).to.have.property('language', defaultLang);
+      });
+    });
+  });
+
   describe('select lang which someone did not have', () => {
     let source = _.cloneDeep(sample);
     let lang = 'en-US';
@@ -95,10 +113,14 @@ describe('i18n test', () => {
       expect(translatedArray).to.be.an('array');
       expect(translatedArray).to.have.lengthOf(2);
     });
-    it(`should be correct language: ${lang}`, () => {
-      translatedArray.forEach(translatedData => {
-        expect(translatedData).to.have.property('language', lang);
-      });
+    it(`should be selected language: ${translatedArray[0].id}`, () => {
+      expect(translatedArray[0]).to.have.property('language', lang);
+    });
+
+    it(`should be default language: ${translatedArray[1].id}`, () => {
+      let defaultTest = translatedArray[1];
+      let defaultLang = defaultTest.i18n.default;
+      expect(defaultTest).to.have.property('language', defaultLang);
     });
   });
 });

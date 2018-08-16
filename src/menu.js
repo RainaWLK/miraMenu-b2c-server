@@ -8,17 +8,9 @@ let _ = require('lodash');
 let filter = require('./filter.js');
 
 const BRANCH_TABLE_NAME = "BranchesB2C";
-const TABLE_NAME = "Menus";
+const TABLE_NAME = "MenusB2C";
 
 const TYPE_NAME = "menus";
-
-
-let i18nSchema = {
-  "name": "",
-  "menu_desc": "",
-  "menu_cat": "",
-}
-
 
 class Menus {
   constructor(reqData){
@@ -50,7 +42,12 @@ class Menus {
   }
 
   async getMenusData(){
-    let menusData = {};
+    let menusData = {
+      branch: {},
+      menus: {},
+      items:{}
+    };
+    //branch
     try {
       let branchDataArray = await db.queryByKey(BRANCH_TABLE_NAME, "branch_id-index", 'branch_id', this.branch_fullID);
       //translate
@@ -58,7 +55,7 @@ class Menus {
       menusData.branch = branch_translated[0];
       menusData.branch.id = menusData.branch.branch_id;
       
-      console.log(menusData);
+      //console.log(menusData);
     }
     catch(err) {
       console.log(err);
@@ -66,40 +63,46 @@ class Menus {
       errMsg.statusCode = 404;
       throw errMsg;
     }
-    
-    try {
-      let restaurantMenusData = await db.queryById(TABLE_NAME, this.reqData.params.restaurant_id);
-      menusData.items = restaurantMenusData.items;
-      menusData.menus = restaurantMenusData.menus;
-    }
-    catch(err){
-      console.log("no restaurant menu");
-      menusData.items = {};
-      menusData.menus = {};
-    }
 
-    if(this.branchQuery){
-      try {
-        let branchMenusData = await db.queryById(TABLE_NAME, this.branch_fullID);
-        //merge
-        for(let id in branchMenusData.menus){
-          menusData.menus[id] = branchMenusData.menus[id];
-        }
-        for(let id in branchMenusData.items){
-          menusData.items[id] = branchMenusData.items[id];
-        }
+    //menu
+    //dynamodb issue, so get all items within restaurant, then filter it
+    let itemIdArray = [];
+    let menusArray = await db.queryByKey(TABLE_NAME, "restaurant_id-index", 'restaurant_id', menusData.branch.restaurant_id);
+    let menus_translated = I18n.selectDataByLang(menusArray, this.lang);
+    menusData.branch.menus.forEach(id => {
+      let menu = menus_translated.find(e => e.menu_id === id);
+      if(menu !== undefined) {
+        menusData.menus[id] = menu;
+
+        //item id
+        menu.sections.forEach(section => {
+          section.items.forEach(item_id => {
+            if(itemIdArray.find(e => e===item_id) === undefined) {
+              itemIdArray.push(item_id);
+            }
+          });
+        });
       }
-      catch(err) {
-        console.log("get branch error");
+    });
+
+    //item
+    let itemArray = await db.queryByKey('ItemsB2C', 'restaurant_id-index', 'restaurant_id', menusData.branch.restaurant_id);
+    let item_translated = I18n.selectDataByLang(itemArray, this.lang);
+    itemIdArray.forEach(id => {
+      let item = item_translated.find(e => e.item_id === id);
+      if(item !== undefined) {
+        menusData.items[id] = item;
       }
-    }
+    });
 
     return menusData;
   }
 
   async getMenuData(){
     try{
+      
       let dbMenusData = await this.getMenusData();
+      //console.log(dbMenusData);
       let menuData = dbMenusData.menus[this.menu_fullID];
       let itemsData = dbMenusData.items;      
 
@@ -110,10 +113,10 @@ class Menus {
       }
 
       menuData.sections = this.migrateSections(menuData, itemsData);
-      delete menuData.items;
+      //delete menuData.items;
       
-      menuData.restaurant_name = dbMenusData.branch.restaurant_name;
-      menuData.branch_name = dbMenusData.branch.branch_name;
+      //menuData.restaurant_name = dbMenusData.branch.restaurant_name;
+      //menuData.branch_name = dbMenusData.branch.branch_name;
 
       return menuData;
     }
@@ -122,41 +125,20 @@ class Menus {
     }
   }
 
-  output(data, fullID){
-    data.id = fullID;
+  output(data){
+    data.id = data.menu_id;
     data.photos = Utils.objToArray(data.photos);
-    delete data.menuControl;
-
-    //calibration
-    if(data.category === undefined){
-      data.category = data.menu_cat;
-      delete data.menu_cat;
-    }
-    if(data.desc === undefined){
-      data.desc = data.menu_desc;
-      delete data.menu_desc;
-    }
-    if(data.availability === undefined){
-      data.availability = data.menu_availability;
-      delete data.menu_availability;      
-    }
+    //delete data.menuControl;
+    delete data.restaurant_id;
+    delete data.branch_id;
+    delete data.menu_id;
 
     return data;
   }
   
-  outputBrief(data, fullID){
-    if(data.category === undefined){
-      data.category = data.menu_cat;
-    }
-    if(data.desc === undefined){
-      data.desc = data.menu_desc;
-    }
-    if(data.availability === undefined){
-      data.availability = data.menu_availability;
-    }
-
+  outputBrief(data){
     let outputData = {
-      "id": fullID,
+      "id": data.menu_id,
       "name": data.name,
       "restaurant_name": data.restaurant_name,
       "branch_name": data.branch_name,
@@ -191,10 +173,7 @@ class Menus {
     let sections = [];
 
     let getItemBrief = (item_id) => {
-      let itemData = itemsData[item_id];    
-      //translate
-      let i18n = new I18n.main(itemData, this.idArray);
-      itemData = i18n.translate(this.lang);
+      let itemData = itemsData[item_id];
 
       let itemBrief = {
         "id": item_id,
@@ -240,17 +219,17 @@ class Menus {
       for(let menu_id in menusData) {
         let menuData = menusData[menu_id];
         
-        menuData.restaurant_name = dbMenusData.branch.restaurant_name;
-        menuData.branch_name = dbMenusData.branch.branch_name;
+        //menuData.restaurant_name = dbMenusData.branch.restaurant_name;
+        //menuData.branch_name = dbMenusData.branch.branch_name;
   
         //item brief
         menuData.sections = this.migrateSections(menuData, itemsData);
   
         //translate
-        let i18n = new I18n.main(menuData, this.idArray);
-        menuData = i18n.translate(this.lang);
+        //let i18n = new I18n.main(menuData, this.idArray);
+        //menuData = i18n.translate(this.lang);
   
-        let output = this.outputBrief(menuData, menu_id);
+        let output = this.outputBrief(menuData);
   
         dataArray.push(output);
       }
@@ -276,10 +255,10 @@ class Menus {
       let menuData = await this.getMenuData();          
 
       //translate
-      let i18n = new I18n.main(menuData, this.idArray);
-      menuData = i18n.translate(this.lang);  
+      //let i18n = new I18n.main(menuData, this.idArray);
+      //menuData = i18n.translate(this.lang);  
 
-      let output = this.output(menuData, this.menu_fullID);
+      let output = this.output(menuData);
       return JSONAPI.makeJSONAPI(TYPE_NAME, output);
     }catch(err) {
         throw err;

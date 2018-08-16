@@ -1,0 +1,91 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "desc": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string"
+    },
+    "availability": {
+      "type": "boolean"
+    },
+    "sections": {
+      "type": "array"
+    },
+    "menu_hours": {
+      "type": "string"
+    },
+    "photos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "desc": {
+            "type": "string"
+          },
+          "mimetype": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "main",
+              "logo"
+            ]
+          },
+          "size": {
+            "type": "object",
+            "properties": {
+              "width": {
+                "type": "number"
+              },
+              "height": {
+                "type": "number"
+              }
+            }
+          },
+          "title": {
+            "type": "string"
+          },
+          "url": {
+            "type": "object",
+            "properties": {
+              "original": {
+                "type": "string"
+              },
+              "small": {
+                "type": "string"
+              },
+              "medium": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": [
+          "mimetype",
+          "url"
+        ]
+      }
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "desc",
+    "category",
+    "availability",
+    "photos"
+  ]
+}

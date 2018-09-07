@@ -54,8 +54,6 @@ class Menus {
       let branch_translated = I18n.selectDataByLang(branchDataArray, this.lang);
       menusData.branch = branch_translated[0];
       menusData.branch.id = menusData.branch.branch_id;
-      
-      //console.log(menusData);
     }
     catch(err) {
       console.log(err);
@@ -67,7 +65,7 @@ class Menus {
     //menu
     //dynamodb issue, so get all items within restaurant, then filter it
     let itemIdArray = [];
-    let menusArray = await db.queryByKey(TABLE_NAME, "restaurant_id-index", 'restaurant_id', menusData.branch.restaurant_id);
+    let menusArray = await db.queryByKey('MenusB2C', "restaurant_id-index", 'restaurant_id', menusData.branch.restaurant_id);
     let menus_translated = I18n.selectDataByLang(menusArray, this.lang);
     menusData.branch.menus.forEach(id => {
       let menu = menus_translated.find(e => e.menu_id === id);
@@ -100,11 +98,15 @@ class Menus {
 
   async getMenuData(){
     try{
-      
       let dbMenusData = await this.getMenusData();
       //console.log(dbMenusData);
       let menuData = dbMenusData.menus[this.menu_fullID];
-      let itemsData = dbMenusData.items;      
+      let itemsData = dbMenusData.items;
+
+      if(this.branchQuery && menuData === undefined) {
+        let restaurantMenuId = `r${this.idArray.r}m${this.idArray.m}`;
+        menuData = dbMenusData.menus[restaurantMenuId];
+      }
 
       if(menuData === undefined){
         let err = new Error("not found");
@@ -113,10 +115,6 @@ class Menus {
       }
 
       menuData.sections = this.migrateSections(menuData, itemsData);
-      //delete menuData.items;
-      
-      //menuData.restaurant_name = dbMenusData.branch.restaurant_name;
-      //menuData.branch_name = dbMenusData.branch.branch_name;
 
       return menuData;
     }
@@ -200,7 +198,9 @@ class Menus {
     }
     else{
       sections = menuData.sections.map(item_section => {
-        item_section.items = item_section.items.map(item_id => getItemBrief(item_id));
+        item_section.items = item_section.items
+          .filter(item_id => itemsData[item_id])
+          .map(item_id => getItemBrief(item_id));
         return item_section;
       });
     }
@@ -218,17 +218,10 @@ class Menus {
       
       for(let menu_id in menusData) {
         let menuData = menusData[menu_id];
-        
-        //menuData.restaurant_name = dbMenusData.branch.restaurant_name;
-        //menuData.branch_name = dbMenusData.branch.branch_name;
-  
+
         //item brief
         menuData.sections = this.migrateSections(menuData, itemsData);
-  
-        //translate
-        //let i18n = new I18n.main(menuData, this.idArray);
-        //menuData = i18n.translate(this.lang);
-  
+
         let output = this.outputBrief(menuData);
   
         dataArray.push(output);
@@ -252,11 +245,7 @@ class Menus {
 
   async getByID() {
     try {
-      let menuData = await this.getMenuData();          
-
-      //translate
-      //let i18n = new I18n.main(menuData, this.idArray);
-      //menuData = i18n.translate(this.lang);  
+      let menuData = await this.getMenuData();
 
       let output = this.output(menuData);
       return JSONAPI.makeJSONAPI(TYPE_NAME, output);
@@ -293,9 +282,6 @@ class Menus {
 
     //if empty
     if(dataArray.length == 0){
-      //let err = new Error("not found");
-      //err.statusCode = 404;
-      //throw err;
       return "";
     }
 

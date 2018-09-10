@@ -99,13 +99,14 @@ class Menus {
   async getMenuData(){
     try{
       let dbMenusData = await this.getMenusData();
-      //console.log(dbMenusData);
       let menuData = dbMenusData.menus[this.menu_fullID];
       let itemsData = dbMenusData.items;
 
       if(this.branchQuery && menuData === undefined) {
         let restaurantMenuId = `r${this.idArray.r}m${this.idArray.m}`;
         menuData = dbMenusData.menus[restaurantMenuId];
+        menuData.branch_name = dbMenusData.branch.branch_name;
+        menuData.branch_id = dbMenusData.branch.branch_id;
       }
 
       if(menuData === undefined){

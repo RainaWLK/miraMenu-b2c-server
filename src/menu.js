@@ -61,6 +61,9 @@ class Menus {
       errMsg.statusCode = 404;
       throw errMsg;
     }
+    if(Array.isArray(menusData.branch.menus) === false) {
+      return menusData;
+    }
 
     //menu
     //dynamodb issue, so get all items within restaurant, then filter it
@@ -73,13 +76,17 @@ class Menus {
         menusData.menus[id] = menu;
 
         //item id
-        menu.sections.forEach(section => {
-          section.items.forEach(item_id => {
-            if(itemIdArray.find(e => e===item_id) === undefined) {
-              itemIdArray.push(item_id);
+        if(Array.isArray(menu.sections)) {
+          menu.sections.forEach(section => {
+            if(Array.isArray(section.items)) {
+              section.items.forEach(item_id => {
+                if(itemIdArray.find(e => e===item_id) === undefined) {
+                  itemIdArray.push(item_id);
+                }
+              });
             }
           });
-        });
+        }
       }
     });
 

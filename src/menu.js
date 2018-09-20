@@ -135,8 +135,8 @@ class Menus {
     data.id = data.menu_id;
     data.photos = Utils.objToArray(data.photos);
     //delete data.menuControl;
-    delete data.restaurant_id;
-    delete data.branch_id;
+    //delete data.restaurant_id;
+    //delete data.branch_id;
     delete data.menu_id;
 
     return data;
@@ -146,6 +146,8 @@ class Menus {
     let outputData = {
       "id": data.menu_id,
       "name": data.name,
+      "restaurant_id": data.restaurant_id,
+      "branch_id": data.branch_id,
       "restaurant_name": data.restaurant_name,
       "branch_name": data.branch_name,
       "category": data.category,

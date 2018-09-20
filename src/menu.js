@@ -75,6 +75,12 @@ class Menus {
       if(menu !== undefined) {
         menusData.menus[id] = menu;
 
+        //restaurant menu
+        if(menu.branch_id === undefined) {
+          menu.branch_id = menusData.branch.id;
+          menu.branch_name = menusData.branch.branch_name;
+        }
+
         //item id
         if(Array.isArray(menu.sections)) {
           menu.sections.forEach(section => {

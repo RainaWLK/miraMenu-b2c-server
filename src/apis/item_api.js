@@ -4,40 +4,7 @@ let API_VERSION = '/v1';
 function go(api){
 
 //=========== Items =========
-api.get(API_VERSION+'/restaurants/{restaurant_id}/branches/{branch_id}/items', async (req) => {
-  let cmdObj = new Items.main(req);
-
-  try{
-      return await cmdObj.get();
-  }
-  catch(err){
-      throw err;
-  }
-});
-
-api.get(API_VERSION+'/restaurants/{restaurant_id}/branches/{branch_id}/items/{item_id}', async (req) => {
-  let cmdObj = new Items.main(req);
-
-  try{
-      return await cmdObj.getByID();
-  }
-  catch(err){
-      throw err;
-  }
-});
-
-api.get(API_VERSION+'/restaurants/{restaurant_id}/items', async (req) => {
-  let cmdObj = new Items.main(req);
-
-  try{
-      return await cmdObj.get();
-  }
-  catch(err){
-      throw err;
-  }
-});
-
-api.get(API_VERSION+'/restaurants/{restaurant_id}/items/{item_id}', async (req) => {
+api.get(API_VERSION+'/restaurants/{restaurant_id}/branches/{branch_id}/menus/{menu_id}/items/{item_id}', async (req) => {
   let cmdObj = new Items.main(req);
 
   try{
@@ -59,17 +26,6 @@ api.get(API_VERSION+'/restaurants/{restaurant_id}/branches/{branch_id}/menus/{me
   }
 });
 
-api.get(API_VERSION+'/restaurants/{restaurant_id}/menus/{menu_id}/items', async (req) => {
-  let cmdObj = new Items.main(req);
-
-  try{
-      return await cmdObj.getMenuItems();
-  }
-  catch(err){
-      throw err;
-  }
-});
-
 //=========== User comment ========
 let postComment = async (req) => {
   let cmdObj = new Items.main(req);
@@ -81,8 +37,7 @@ let postComment = async (req) => {
       throw err;
   }
 }
-api.post(API_VERSION+'/restaurants/{restaurant_id}/branches/{branch_id}/items/{item_id}/comment', postComment);
-api.post(API_VERSION+'/restaurants/{restaurant_id}/items/{item_id}/comment', postComment);
+api.post(API_VERSION+'/restaurants/{restaurant_id}/branches/{branch_id}/menus/{menu_id}/items/{item_id}/comment', postComment);
 
 //=========== Photos =========
 api.get(API_VERSION+'/restaurants/{restaurant_id}/items/{item_id}/photos/{photo_id}', async (req) => {

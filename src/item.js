@@ -108,8 +108,12 @@ class Items {
     return {
       "id": fullID,
       "name": data.name,
+      "restaurant_id": data.restaurant_id,
+      "branch_id": data.branch_id,
+      "menu_id": data.menu_id,
       "restaurant_name": data.restaurant_name,
       "branch_name": data.branch_name,
+      "menu_name": data.menu_name,
       "availability": (data.menu_availability == false)?false:true,
       "item_hours": data.item_hours,
       "list_price": data.list_price,
@@ -146,10 +150,6 @@ class Items {
     for(let item_id in itemsData) {
         let itemData = itemsData[item_id];
 
-        //translate
-        //let i18n = new I18n.main(itemData, this.idArray);
-        //itemData = i18n.translate(this.lang);
-
         let output = this.outputBrief(itemData, item_id);
 
         dataArray.push(output);
@@ -169,10 +169,6 @@ class Items {
   async getByID() {
       try {
         let itemData = await this.getItemData();
-
-        //translate
-        //let i18n = new I18n.main(itemData, this.idArray);
-        //itemData = i18n.translate(this.lang);
 
         let output = this.output(itemData, this.item_fullID);
         return JSONAPI.makeJSONAPI(TYPE_NAME, output);
@@ -194,7 +190,7 @@ class Items {
     }
     
     let item_ids = {};  //id:section_name
-    if(menuData.sections === undefined) {
+    if(menuData.sections === undefined) { //workaround
       if((Array.isArray(menuData.items))&&(menuData.items.length > 0)) {
         menuData.items.forEach(id => {
           item_ids[id] = 'main';
@@ -215,36 +211,24 @@ class Items {
       err.statusCode = 404;
       throw err;
     }
-    
-    let params = {
-      RequestItems: {}
-    };
-    let keys = [];
+
+    let itemsData = [];
+    let itemArray = await db.queryByKey('ItemsB2C', 'restaurant_id-index', 'restaurant_id', this.reqData.params.restaurant_id);
+    let item_translated = I18n.selectDataByLang(itemArray, this.lang);
     for(let id in item_ids) {
-      keys.push({
-        id: id
-      })
-    }
-    params.RequestItems[TABLE_NAME] = {
-      Keys: keys
-    };
-
-    let result = await db.batchGet(params);
-    let itemsData = result.Responses[TABLE_NAME];
-
-    if(itemsData === undefined){
-      let err = new Error("not found");
-      err.statusCode = 404;
-      throw err;
+      let item = item_translated.find(e => e.item_id === id);
+      if(item !== undefined) {
+        itemsData.push(item);
+      }
     }
 
     //output
     let dataArray = itemsData.map(itemData => {
-      let i18n = new I18n.main(itemData, this.idArray);
-      itemData = i18n.translate(this.lang);
+      itemData.restaurant_id = this.reqData.params.restaurant_id;
+      itemData.branch_id = this.branch_fullID;
+      itemData.menu_id = this.reqData.params.menu_id;
 
       let output = this.outputBrief(itemData, itemData.id);
-      output.section_name = item_ids[itemData.id];
       return output;
     });
 

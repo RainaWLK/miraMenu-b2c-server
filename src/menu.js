@@ -223,42 +223,6 @@ class Menus {
     return sections;
   }
 
-  async get() {
-    try{
-      let dbMenusData = await this.getMenusData();
-      let menusData = dbMenusData.menus;
-      let itemsData = dbMenusData.items;
-  
-      //output
-      let dataArray = [];
-      
-      for(let menu_id in menusData) {
-        let menuData = menusData[menu_id];
-
-        //item brief
-        menuData.sections = this.migrateSections(menuData, itemsData);
-
-        let output = this.outputBrief(menuData);
-  
-        dataArray.push(output);
-      }
-  
-      dataArray = filter.sortByFilter(this.reqData.queryString, dataArray);
-      dataArray = filter.pageOffset(this.reqData.queryString, dataArray);
-  
-      //if empty
-      if(dataArray.length == 0){
-        return "";
-      }
-      
-      return JSONAPI.makeJSONAPI(TYPE_NAME, dataArray);
-    }
-    catch(err){
-      throw err;
-    }
-
-  }
-
   async getByID() {
     try {
       let menuData = await this.getMenuData();

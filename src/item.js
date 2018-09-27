@@ -7,10 +7,8 @@ let _ = require('lodash');
 //let S3 = require('./s3');
 let filter = require('./filter.js');
 
-const BRANCH_TABLE_NAME = "Branches";
-const RESTAURANT_TABLE_NAME = "Restaurants";
-const MENU_TABLE_NAME = "Menus";
-//const TABLE_NAME = "Menus";
+const BRANCH_TABLE_NAME = "BranchesB2C";
+const MENU_TABLE_NAME = "MenusB2C";
 const TABLE_NAME = "ItemsB2C";
 const COMMENT_TABLE_NAME = "UserComment";
 
@@ -139,83 +137,87 @@ class Items {
       return {};
     }
   }
-  
-
-  async get() {
-    let itemsData = await this.getItemsData();
-    
-    //output
-    let dataArray = [];
-    
-    for(let item_id in itemsData) {
-        let itemData = itemsData[item_id];
-
-        let output = this.outputBrief(itemData, item_id);
-
-        dataArray.push(output);
-    }
-
-    dataArray = filter.sortByFilter(this.reqData.queryString, dataArray);
-    dataArray = filter.pageOffset(this.reqData.queryString, dataArray);
-
-    //if empty
-    if(dataArray.length == 0){
-      return "";
-    }
-
-    return JSONAPI.makeJSONAPI(TYPE_NAME, dataArray);
-  }
 
   async getByID() {
-      try {
-        let itemData = await this.getItemData();
+    try {
+      let itemData = await this.getMenuItem();
+      let output = this.output(itemData, this.item_fullID);
+      return JSONAPI.makeJSONAPI(TYPE_NAME, output);
+    }catch(err) {
+        throw err;
+    }
+  }
 
-        let output = this.output(itemData, this.item_fullID);
-        return JSONAPI.makeJSONAPI(TYPE_NAME, output);
-      }catch(err) {
+  async getItemId() {
+    try {
+      let menusData = {
+        branch: {},
+        menu: {},
+        item_ids: {}  //id:section_name
+      };
+      
+      //branch
+      let branchDataArray = await db.queryByKey(BRANCH_TABLE_NAME, "branch_id-index", 'branch_id', this.branch_fullID);
+      //translate
+      let branch_translated = I18n.selectDataByLang(branchDataArray, this.lang);
+      menusData.branch = branch_translated[0];
+      menusData.branch.id = menusData.branch.branch_id;
+
+      //menu
+      let itemIdArray = [];
+      let menusArray = await db.queryByKey('MenusB2C', "restaurant_id-index", 'restaurant_id', menusData.branch.restaurant_id);
+      let menus_translated = I18n.selectDataByLang(menusArray, this.lang);
+      let target_menu_id = this.branch_fullID + this.reqData.params.menu_id;
+      let menuData = menus_translated.find(menu => menu.menu_id === target_menu_id);
+      if(menuData === undefined){
+        target_menu_id = this.reqData.params.restaurant_id + this.reqData.params.menu_id;
+        menuData = menus_translated.find(menu => menu.menu_id === target_menu_id);
+        if(menuData === undefined){
+          let err = new Error("not found");
+          err.statusCode = 404;
           throw err;
+        }
       }
+      menusData.menu = menuData;
+      
+      //item ids
+      if(menuData.sections === undefined) { //workaround
+        if((Array.isArray(menuData.items))&&(menuData.items.length > 0)) {
+          menuData.items.forEach(id => {
+            menusData.item_ids[id] = 'main';
+          });
+        }
+      }
+      else {
+        for(let i in menuData.sections){
+          let item_section = menuData.sections[i];
+  
+          item_section.items.forEach(id => {
+            menusData.item_ids[id] = item_section.name;
+          });
+        };
+      }
+      if(_.isEmpty(menusData.item_ids)) {
+        let err = new Error("not found");
+        err.statusCode = 404;
+        throw err;
+      }
+      console.log(menusData);
+      return menusData;
+    }
+    catch(err) {
+      throw err;
+    }
+
   }
 
   async getMenuItems() {
-    let menusData = await db.queryById(MENU_TABLE_NAME, this.branch_fullID);
-
-    let menu_fullID = this.branch_fullID + this.reqData.params.menu_id;
-    let menuData = menusData.menus[menu_fullID];
-    
-    if(menuData === undefined){
-      let err = new Error("not found");
-      err.statusCode = 404;
-      throw err;
-    }
-    
-    let item_ids = {};  //id:section_name
-    if(menuData.sections === undefined) { //workaround
-      if((Array.isArray(menuData.items))&&(menuData.items.length > 0)) {
-        menuData.items.forEach(id => {
-          item_ids[id] = 'main';
-        });
-      }
-    }
-    else {
-      for(let i in menuData.sections){
-        let item_section = menuData.sections[i];
-
-        item_section.items.forEach(id => {
-          item_ids[id] = item_section.name;
-        });
-      };
-    }
-    if(_.isEmpty(item_ids)) {
-      let err = new Error("not found");
-      err.statusCode = 404;
-      throw err;
-    }
+    let menusData = await this.getItemId();
 
     let itemsData = [];
     let itemArray = await db.queryByKey('ItemsB2C', 'restaurant_id-index', 'restaurant_id', this.reqData.params.restaurant_id);
     let item_translated = I18n.selectDataByLang(itemArray, this.lang);
-    for(let id in item_ids) {
+    for(let id in menusData.item_ids) {
       let item = item_translated.find(e => e.item_id === id);
       if(item !== undefined) {
         itemsData.push(item);
@@ -225,8 +227,10 @@ class Items {
     //output
     let dataArray = itemsData.map(itemData => {
       itemData.restaurant_id = this.reqData.params.restaurant_id;
-      itemData.branch_id = this.branch_fullID;
-      itemData.menu_id = this.reqData.params.menu_id;
+      itemData.branch_id = menusData.branch.branch_id;
+      itemData.menu_id = menusData.menu.menu_id;
+      itemData.branch_name = menusData.branch.branch_name;
+      itemData.menu_name = menusData.menu.name;
 
       let output = this.outputBrief(itemData, itemData.id);
       return output;
@@ -242,20 +246,53 @@ class Items {
 
     return JSONAPI.makeJSONAPI(TYPE_NAME, dataArray);
   }
+  
+  async getMenuItem() {
+    let menusData = await this.getItemId();
+    let target_id;
+    
+    if(menusData.item_ids[this.item_fullID] !== undefined) {
+      target_id = this.item_fullID;
+    } else {
+      target_id = this.reqData.params.restaurant_id + this.reqData.params.item_id;
+      
+      if(menusData.item_ids[target_id] === undefined) {
+        let err = new Error("not found");
+        err.statusCode = 404;
+        throw err;
+      }
+    }
+
+    try {
+      let itemArray = await db.queryByKey('ItemsB2C', 'item_id-index', 'item_id', target_id);
+      let item_translated = I18n.selectDataByLang(itemArray, this.lang);
+      
+      let itemData = item_translated[0];
+      itemData.restaurant_id = this.reqData.params.restaurant_id;
+      itemData.branch_id = menusData.branch.id;
+      itemData.menu_id = menusData.menu.menu_id;
+      itemData.branch_name = menusData.branch.branch_name;
+      itemData.menu_name = menusData.menu.name;
+      return itemData;
+    }
+    catch(err) {
+      throw err;
+    }
+  }
 
   async postComment(payload) {
     let inputData = payload;
+    console.log(payload);
 
     try{
-      let itemData = await this.getItemData();
-      console.log(itemData);
+      let itemData = await this.getMenuItem();
 
       let timestamp = Date.now();
-      let id = this.item_fullID + '_' + timestamp;
+      let object_id = this.branch_fullID + this.reqData.params.menu_id + this.reqData.params.item_id;
 
       let itemCommentData = {
-        id: id,
-        object_id: this.item_fullID,
+        id: object_id + '_' + timestamp,
+        object_id: object_id,
         identityId: this.reqData.userinfo.cognitoIdentityId,
         data: payload.data,
         date: timestamp

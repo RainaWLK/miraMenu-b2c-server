@@ -281,9 +281,6 @@ class Items {
   }
 
   async postComment(payload) {
-    let inputData = payload;
-    console.log(payload);
-
     try{
       let itemData = await this.getMenuItem();
 
@@ -292,13 +289,15 @@ class Items {
 
       let itemCommentData = {
         id: object_id + '_' + timestamp,
-        object_id: object_id,
+        object_id: itemData.item_id,
+        branch_id: itemData.branch_id,
+        menu_id: itemData.menu_id,
         identityId: this.reqData.userinfo.cognitoIdentityId,
         data: payload.data,
         date: timestamp
       }
       console.log(itemCommentData);
-      let msg = await db.post(COMMENT_TABLE_NAME, itemCommentData);
+      await db.post(COMMENT_TABLE_NAME, itemCommentData);
 
       //output
       let output = {

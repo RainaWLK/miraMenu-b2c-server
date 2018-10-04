@@ -20,8 +20,8 @@ class I18n {
       return this.dbData;
     }
     //get lang pack
-    let langPack = this.dbData.i18n[lang];
-    let defaultPack = this.dbData.i18n[this.dbData.i18n.default];
+    let langPack = this.getLangPack(this.dbData.i18n, lang);
+    let defaultPack = this.getLangPack(this.dbData.i18n, this.dbData.i18n.default);
     if(typeof langPack !== 'object'){
       //use default
       outputLang = this.dbData.i18n.default;
@@ -57,9 +57,22 @@ class I18n {
     return this.dbData;
   }
 
+  getLangPack(i18n, lang) {
+    if(typeof i18n[lang] === 'object') {
+      return i18n[lang];
+    }
+
+    for(let i in i18n) {
+      if(lang.toLowerCase() === i.toLowerCase()) {
+        return i18n[i];
+      }
+    }
+    return undefined;
+  }
+
   getStr(lang, i18n, key){
-    let langPack = i18n[lang];
-    let defaultPack = i18n[i18n.default];
+    let langPack = this.getLangPack(i18n, lang);
+    let defaultPack = this.getLangPack(i18n, i18n.default);
     let i18nStr;
     
     if((typeof langPack === 'object') && (typeof langPack[key] === 'string')) {
@@ -93,14 +106,14 @@ class I18n {
     if(typeof this.dbData.i18n !== 'object'){
       this.dbData.i18n = {};
     }
-    if(typeof this.dbData.i18n[lang] !== 'object'){
+    if(typeof this.getLangPack(this.dbData.i18n, lang) !== 'object'){
       this.dbData.i18n[lang] = {};
     }
     if(typeof this.dbData.i18n.default !== 'string'){
       this.dbData.i18n.default = lang;
     }
     inputData.i18n = this.dbData.i18n;
-    let i18nPack = inputData.i18n[lang];
+    let i18nPack = this.getLangPack(inputData.i18n, lang);
     
     let makei18nElement = (schemaData, element, dbDataElement) => {
       seq++;

@@ -58,6 +58,9 @@ class I18n {
   }
 
   getLangPack(i18n, lang) {
+    if(typeof lang !== 'string') {
+      return undefined;
+    }
     if(typeof i18n[lang] === 'object') {
       return i18n[lang];
     }

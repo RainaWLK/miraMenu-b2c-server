@@ -1,4 +1,4 @@
-let ApiBuilder = require('claudia-api-builder');
+//let ApiBuilder = require('claudia-api-builder');
 //import { makeInfo } from './image.js';
 //let authorizer = require('./authorizer');
 

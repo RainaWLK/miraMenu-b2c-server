@@ -1,62 +1,34 @@
 {
   "name": "MiraMenu",
   "version": "1.0.0",
-  "files": [
-    "build"
-  ],
   "description": "B2C backend",
-  "main": "build/app.js",
+  "main": "app.js",
   "repository": "https://git-codecommit.us-east-1.amazonaws.com/v1/repos/miraMenu",
   "scripts": {
-    "transpile_babel": "babel src -d build",
-    "transpile": "rm -Rf build && mkdir build && cp -R src/* build/",
     "test": "mocha test/i18n.js --timeout 15000",
-    "serverless_deploy": "serverless deploy -v",
-    "serverless_package": "npm run transpile && serverless package",
-    "serverless_destroy": "serverless remove",
-    "create": "npm run transpile && claudia create --name MiraMenuB2C --region us-west-2 --api-module build/app --version dev --no-optional-dependencies --security-group-ids sg-a9ae7ed6 --subnet-ids subnet-d453888e --role MiraMenuB2C-executor",
-    "release": "claudia set-version --version prod",
-    "deploy": "npm run transpile && claudia update --version dev --set-env NODE_ENV=production --runtime nodejs8.10 --no-optional-dependencies",
-    "start": "npm run transpile && cross-env NODE_ENV=development node build/app.js",
-    "help": "claudia --help",
-    "destroy": "claudia destroy"
+    "start": "NODE_ENV=development node app.js"
   },
   "author": "Luke <luke.shih@neogeeks.net>",
   "license": "MIT",
   "private": true,
   "devDependencies": {
-    "babel-cli": "^6.26.0",
-    "babel-loader": "^7.1.2",
-    "babel-preset-env": "^1.6.0",
-    "body-parser": "^1.18.2",
-    "chai": "^4.1.2",
+    "chai": "^4.2.0",
     "chai-ajv-json-schema": "^1.0.0",
-    "claudia": "^2.14.2",
-    "cors": "^2.8.4",
-    "cross-env": "^5.1.1",
-    "express": "^4.16.2",
     "mocha": "^4.0.1",
-    "serverless": "^1.23.0",
-    "serverless-offline": "^3.16.0",
-    "serverless-plugin-include-dependencies": "^3.0.0",
-    "serverless-webpack": "^3.1.1",
-    "supertest": "^3.0.0",
-    "webpack": "^3.6.0",
-    "webpack-node-externals": "^1.6.0"
-  },
-  "dependencies": {
-    "babel-polyfill": "^6.26.0",
-    "claudia-api-builder": "^2.5.1",
-    "elasticsearch": "^14.2.1",
-    "lodash": "^4.17.4",
-    "query-string": "^5.0.0",
-    "redis": "^2.8.0",
-    "request": "^2.83.0",
+    "request": "^2.88.0",
     "request-promise": "^4.2.2",
     "request-promise-native": "^1.0.5",
-    "winston": "^2.4.0"
+    "supertest": "^3.3.0"
   },
-  "optionalDependencies": {
-    "aws-sdk": "^2.128.0"
+  "dependencies": {
+    "aws-sdk": "^2.330.0",
+    "body-parser": "^1.18.3",
+    "cors": "^2.8.4",
+    "elasticsearch": "^14.2.1",
+    "express": "^4.16.2",
+    "lodash": "^4.17.11",
+    "query-string": "^5.0.0",
+    "redis": "^2.8.0",
+    "winston": "^2.4.4"
   }
 }

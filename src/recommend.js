@@ -213,7 +213,8 @@ class Recommend {
       };
       
       let response = await es.simpleSearch('items', body);
-      return response.hits.hits.map(hit => {
+      let itemObj = {};
+      response.hits.hits.forEach(hit => {
         let item = hit._source;
         //console.log(item);
         
@@ -234,8 +235,24 @@ class Recommend {
             item.photos = {}
           }
         }
-        return item;
+        
+        if(itemObj[item.item_id] === undefined) {
+          itemObj[item.item_id] = item;
+        } else {
+          //console.log('select lang...:' + item.item_id);
+          if(item.language.toLowerCase() === this.lang.toLowerCase()) {
+            //console.log(`${itemObj[item.item_id].language} ==> ${item.language}`);
+            itemObj[item.item_id] = item;
+          }
+        }
       });
+      
+      //obj to Array
+      let itemArray = [];
+      for(let id in itemObj) {
+        itemArray.push(itemObj[id]);
+      }
+      return itemArray;
     }
     catch(err) {
       console.error(err);

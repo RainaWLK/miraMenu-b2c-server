@@ -138,6 +138,31 @@ class Items {
     }
   }
 
+  async get() {
+    let itemsData = await this.getItemsData();
+    
+    //output
+    let dataArray = [];
+    
+    for(let item_id in itemsData) {
+        let itemData = itemsData[item_id];
+
+        let output = this.outputBrief(itemData, item_id);
+
+        dataArray.push(output);
+    }
+
+    dataArray = filter.sortByFilter(this.reqData.queryString, dataArray);
+    dataArray = filter.pageOffset(this.reqData.queryString, dataArray);
+
+    //if empty
+    if(dataArray.length == 0){
+      return "";
+    }
+
+    return JSONAPI.makeJSONAPI(TYPE_NAME, dataArray);
+  }
+
   async getByID() {
     try {
       let itemData = await this.getMenuItem();

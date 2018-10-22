@@ -267,8 +267,13 @@ function selectDataByLang(sourceDataArray, lang) {
   //group by id
   let idGroup = {};
   sourceDataArray.forEach(element => {
+    let defaultLang;
     let id = element.id.substring(0, element.id.lastIndexOf('_'));
-    let defaultLang = element.i18n.default.toLowerCase();
+    if(element.i18n === undefined) {
+      defaultLang = element.language;
+    } else {
+      defaultLang = element.i18n.default.toLowerCase();
+    }
 
     if(idGroup[id] === undefined) {
       idGroup[id] = {

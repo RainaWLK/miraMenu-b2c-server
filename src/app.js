@@ -24,7 +24,4 @@ Recommend_API.go(api);
 //let recommend = require('./recommend');
 //recommend.unittest();
 
-//let Recommend = require('./recommend.js');
-//Recommend.genRecommendItems();
-
 module.exports = api.app;

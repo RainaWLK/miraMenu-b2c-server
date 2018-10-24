@@ -6,7 +6,7 @@
   "repository": "https://git-codecommit.us-east-1.amazonaws.com/v1/repos/miraMenu",
   "scripts": {
     "test": "mocha test/i18n.js --timeout 15000",
-    "start": "NODE_ENV=development node app.js"
+    "start": "node src/app.js"
   },
   "author": "Luke <luke.shih@neogeeks.net>",
   "license": "MIT",

@@ -8,7 +8,7 @@ chai.use(require('chai-ajv-json-schema'));
 
 var expect = chai.expect;
 
-const BASE_URL = 'http://localhost:8081/v1'
+const BASE_URL = 'http://localhost/v1'
 const URI = '/restaurants/r1528125059703/branches/s1528125119706/menus/m1528153754828';
 
 let serv = request(BASE_URL);

@@ -1,11 +1,11 @@
-let ApiBuilder = require('claudia-api-builder');
+//let ApiBuilder = require('claudia-api-builder');
 //import { makeInfo } from './image.js';
 //let authorizer = require('./authorizer');
 
-let DEBUG = 0;
-if(process.env.NODE_ENV == 'development'){
-  DEBUG = 1;
-}
+let DEBUG = 1;
+//if(process.env.NODE_ENV == 'development'){
+//  DEBUG = 1;
+//}
 
 //private functions
 class ReqData{
@@ -87,7 +87,7 @@ class Rest {
   constructor(){
     this.app = null
 
-    if(DEBUG) {
+    //if(DEBUG) {
       let express = require('express');
       let cors = require('cors');
       let bodyParser = require('body-parser');
@@ -95,13 +95,13 @@ class Rest {
       let path = require('path');
         
       this.app = express();
-      this.app.use(bodyParser.json({limit: '50mb'}));
+      //this.app.use(bodyParser.json({limit: '50mb'}));
       //this.app.use(bodyParser.raw({limit: '50mb'}));
       this.app.use(cors());
       this.app.options("*", cors());
       this.app.use("/", express.static(path.join(__dirname, '../www')));
 
-        let server = this.app.listen(8081, () => {
+        let server = this.app.listen(80, () => {
             let host = server.address().address;
             let port = server.address().port;
        
@@ -118,10 +118,10 @@ class Rest {
                 res.end();
             });
         });  
-    }
-    else {
-        this.app = new ApiBuilder();
-    }
+    //}
+    //else {
+    //    this.app = new ApiBuilder();
+    //}
   }
   
   responseOK(res, msg) {

@@ -3,6 +3,9 @@ let API_VERSION = '/v1';
 
 function go(api){
 
+api.get(API_VERSION, async (req) => {
+  return "health ok";
+});
   
 api.get(API_VERSION+'/restaurants/{restaurant_id}', async (req) => {
   let cmdObj = new Restaurant.main(req);

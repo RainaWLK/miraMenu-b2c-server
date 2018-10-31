@@ -6,10 +6,10 @@ import { sprintf } from 'sprintf-js';
 
 const USERINFO_TABLE_NAME = "Users";
 
-let DEBUG = 0;
-if(process.env.NODE_ENV == 'development'){
-	DEBUG = 1;
-}
+let DEBUG = 1;
+//if(process.env.NODE_ENV == 'development'){
+//	DEBUG = 1;
+//}
 
 function makePathList(pathArray){
     let path = {};

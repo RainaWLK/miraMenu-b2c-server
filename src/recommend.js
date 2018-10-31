@@ -19,6 +19,8 @@ const TYPE_NAME = "branches";
 class Recommend {
   constructor(reqData){
       this.reqData = reqData;
+      //default
+      this.lang = 'en-US';
 
       //id array
       this.branch_fullID = this.reqData.params.restaurant_id;
@@ -28,6 +30,7 @@ class Recommend {
       this.idArray = Utils.parseID(this.branch_fullID);
 
       //lang
+      
       if(typeof reqData.queryString.lang == 'string'){
           this.lang = reqData.queryString.lang;
       }
@@ -290,26 +293,33 @@ class Recommend {
         }
       };
   
-      let response = await es.simpleSearch('menuitem', body);
+      let response = await es.simpleSearch('menuitem_new', body);
       let itemMenu = {};
-      response.hits.hits.forEach(hit => {
-        let idAdday = Utils.parseID(hit._source.menu_id);
-        let idAdday_item = Utils.parseID(hit._source.item_id);
+      let ids = response.hits.hits.map(hit => {
+        let item_id = hit._source.item_id;
+        
+        //menu
+        let m_index = Math.floor(Math.random() * hit._source.menu.length);
+        let menu = hit._source.menu[m_index];
+        
+        //branch
+        let b_index = Math.floor(Math.random() * menu.branches.length);
+        let branch_id = menu.branches[b_index];
+        
+        let idArray = Utils.parseID(menu.menu_id);
+        let idArray_item = Utils.parseID(item_id);
+        let idArray_branch = Utils.parseID(branch_id);
         //merge
-        idAdday.i = idAdday_item.i;
-        itemMenu[hit._source.item_id] = {
-          menu_id: hit._source.menu_id,
-          idArray: idAdday
+        idArray.i = idArray_item.i;
+        idArray.s = idArray_branch.s;
+        
+        itemMenu[item_id] = {
+          menu_id: menu.menu_id,
+          idArray: idArray
         }
+        return item_id;
       });
-      
-      let ids = [];
-      for(let item_id in itemMenu) {
-        ids.push(item_id);
-      }
-      //console.log(ids);
-  
-      //bug: lang?
+
       let targetItems = await this.getItemsByID(ids);
   
       let dataArray = targetItems.map(itemData => {

@@ -3,7 +3,8 @@ const esClient = new elasticsearch.Client({
   //aws elasticsearch
   //hosts: [ 'https://vpc-miramenu-mbynmdnepcr7oxinykkzoi6qdy.us-west-2.es.amazonaws.com']
   //ECS ALB
-  hosts: [ 'http://internal-es-alb-1720960170.us-west-2.elb.amazonaws.com:9200' ]
+  //hosts: [ 'http://internal-es-alb-1720960170.us-west-2.elb.amazonaws.com:9200' ]
+  hosts: [ 'http://b2c-server-462632372.us-west-2.elb.amazonaws.com:9200' ]
   //Local
   //hosts: [ 'http://ip-172-31-11-6.us-west-2.compute.internal:9200' ]
 });

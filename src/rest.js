@@ -65,7 +65,7 @@ function makeReqData(req) {
     reqData.userinfo.cognitoIdentityPoolId = req.context.cognitoIdentityPoolId;
   }
   reqData.body = req.body;
-  console.log(`${reqData.method}: ${reqData.resource}`);
+  //console.log(`${reqData.method}: ${reqData.resource}`);
 
   return reqData;
 }
@@ -125,7 +125,7 @@ class Rest {
   }
   
   responseOK(res, msg) {
-    console.log('resoponse OK');
+    //console.log('resoponse OK');
     if(DEBUG) {
       if(msg == ""){
         res.status(204);

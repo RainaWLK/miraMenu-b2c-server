@@ -40,7 +40,7 @@ function checkConnection() {
   console.log("check connection...");
   return new Promise((resolve, reject) => {
     esClient.cluster.health({
-      waitForStatus: 'yellow'
+      waitForStatus: 'red'
     }, (err) => {
       if(err) {
         console.error('elasticsearch cluster is down!');

@@ -15,7 +15,8 @@ function initRedis(){
       return;
     }
     conn = redis.createClient({
-      host: 'dbcache.osilv8.0001.usw2.cache.amazonaws.com',
+      //host: 'dbcache.osilv8.0001.usw2.cache.amazonaws.com',
+      host: 'redis-nlb-2f8d80dd530ed344.elb.us-west-2.amazonaws.com',
       port: '6379'
     });
     
@@ -139,5 +140,6 @@ exports.get = redisGet;
 exports.set = redisSet;
 exports.hmset = hmset;
 exports.hgetall = hgetall;
+exports.initRedis = initRedis;
 
 exports.getRandomData = getRandomData;

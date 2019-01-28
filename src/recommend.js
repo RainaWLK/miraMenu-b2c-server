@@ -7,6 +7,7 @@ let filter = require('./filter.js');
 let Branches = require('./branch.js');
 let Items = require('./item.js');
 let es = require('./elasticsearch.js');
+const ranker = require('./counter.js');
 
 const TABLE_NAME = "Branches";
 const RESTAURANT_TABLE_NAME = "Restaurants";
@@ -262,10 +263,74 @@ class Recommend {
     }
   }
   
+  async getItemsByRank() {
+    console.log('getItemsByRank');
+    let quantity = parseInt(this.reqData.queryString.quantity, 10);
+    if((isNaN(quantity))||(quantity < 0)||(quantity > 100)){
+      quantity = 10;
+    }
+    let page = parseInt(this.reqData.queryString.page, 10);
+    if((isNaN(page))||(page < 0)){
+      page = 0;
+    }
+    let from = page * quantity;
+
+    try {
+      let rankList = await ranker.getRankList(from, quantity);  //[menuItemid, counter]
+
+      //??????
+      let ids = rankList.map(itemSet => itemSet[0]);
+      //console.log(ids);
+
+      let targetItems = await this.getItemsByID(ids);
+      //console.log("getItemsByRank getItemsByID done");
+      //console.log(targetItems);
+
+      let restaurant_ids = [];
+      ids.forEach(id => {
+        if(targetItems.find(e => e.id === id) === undefined) {
+          let idArray = Utils.parseID(id);
+          let restaurant_id = `r${idArray.r}i${idArray.i}`;
+          restaurant_ids.push(restaurant_id);
+        }
+      });
+      //console.log(restaurant_ids);
+      if(restaurant_ids.length > 0) {
+        let targetRestaurantItems = await this.getItemsByID(restaurant_ids);
+        //console.log("getItemsByRank getItemsByID 2 done");
+        //console.log(targetRestaurantItems);
+        targetItems = targetItems.concat(targetRestaurantItems);
+        //console.log(targetItems);
+      }
+
+      let dataArray = targetItems.map(itemData => {
+        //console.log(itemData);
+        //let idAdday = itemMenu[itemData.item_id].idArray;
+        //itemData.uri = '/'+Utils.makePath(idAdday);
+        
+        return this.outputItemBrief(itemData, itemData.id);
+      });
   
+      //if empty
+      if(dataArray.length == 0){
+        return "";
+      }
+      return JSONAPI.makeJSONAPI(TYPE_NAME, dataArray);    
+    }
+    catch(err) {
+      console.error(err);
+    }
+
+  }
   
   async getItems() {
     try {
+      console.log(this.reqData.queryString);
+      let sort = this.reqData.queryString.sort;
+      if(sort === 'popular') {
+        return this.getItemsByRank();
+      }
+
       let quantity = parseInt(this.reqData.queryString.quantity, 10);
       if((isNaN(quantity))||(quantity < 0)||(quantity > 100)){
         quantity = 10;
@@ -319,6 +384,8 @@ class Recommend {
         }
         return item_id;
       });
+      console.log("recommend getItems");
+      console.log(ids);
 
       let targetItems = await this.getItemsByID(ids);
   

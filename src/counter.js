@@ -1,25 +1,27 @@
 const redis = require('./redis.js');
+const _ = require('lodash');
 
 async function incr(id) {
   let counterId = id + '_counter';
   let client;
+  let d = new Date();
+  let dd = ('0'+ d.getDate()).substr(-2);
+  let mon= ('0'+d.getMonth()+1).substr(-2);
+  let dateStr = `view:${d.getFullYear()}/${mon}/${dd}`;
 
   try {
     client = await redis.initRedis();
+    //sorted set by day
+    await client.zincrby(dateStr, 1, id);
+    console.log('zincrby done');
+    //total counter by item
+    result = await client.incr(counterId);
+    return result;
   }
   catch(err) {
     console.error(err);
     return;
   }
-  return new Promise((resolve, reject) => {
-    client.incr(counterId, (err, reply) => {
-      if(err) {
-        console.error(err);
-        resolve(0);
-      }
-      resolve(reply);
-    });
-  });
 }
 
 async function getCounter(id) {
@@ -27,11 +29,32 @@ async function getCounter(id) {
 
   try {
     let client = await redis.initRedis();
-    return new Promise((resolve, reject) => {
-      client.get(counterId, (err, reply) => {
-        resolve(reply);
-      });
-    })
+    result = await client.get(counterId);
+    return result;
+  }
+  catch(err) {
+    console.error(err);
+    return 0;
+  }
+}
+
+async function getRankList(from, size) {
+  //today
+  try {
+    console.log('getRankList');
+    let client = await redis.initRedis();
+
+    let d = new Date();
+    let dd = ('0'+ d.getDate()).substr(-2);
+    let mon= ('0'+d.getMonth()+1).substr(-2);
+    let dateStr = `view:${d.getFullYear()}/${mon}/${dd}`;
+  
+    result = await client.zrevrange(dateStr, from, size,'withscores');
+
+    list = _.chunk(result, 2);
+    console.log(list);
+
+    return list;
   }
   catch(err) {
     console.error(err);
@@ -42,3 +65,4 @@ async function getCounter(id) {
 exports.incr = incr;
 exports.get = getCounter;
 
+exports.getRankList = getRankList;

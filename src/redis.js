@@ -1,4 +1,4 @@
-const redis = require("redis");
+const redis = require("async-redis");
 let conn = {
   ready: false
 };
@@ -22,6 +22,7 @@ function initRedis(){
     
     conn.on("error", function (err) {
       console.log("Redis Error " + err);
+      conn.ready = false;
       reject(err);
     });
     conn.on("connect", () => {
@@ -45,95 +46,50 @@ function initRedis(){
 //  });
 //  client.quit();
 //});
-function redisGet(key) {
-  return new Promise((resolve, reject) => {
-    initRedis().then(client => {
-      client.get(key, (err, reply) => {
-        if(err) {
-          console.log(err);
-          reject(err);
-        }
-        else {
-          //console.log(reply);
-          resolve(JSON.parse(reply));
-        }
-      });
-    }).catch(err => {
-      reject(err);
-    });
-  }) 
-}
-
-function redisSet(key, str) {
-  return new Promise((resolve, reject) => {
-    initRedis().then(client => {
-      client.set(key, JSON.stringify(str), (err, res) => {
-        if(err) {
-          console.log(err);
-          reject(err);
-        }
-        else {
-          //console.log(res);
-          resolve(res);
-        }
-      });
-    }).catch(err => {
-      reject(err);
-    });
-  }) 
-}
-
-function hmset(key, obj){
-  return new Promise((resolve, reject) => {
-    initRedis().then(client => {
-      client.hmset(key, obj, (err, res) => {
-        if(err) {
-          console.log(err);
-          reject(err);
-        }
-        else {
-          //console.log(res);
-          resolve(res);
-        }
-      });
-    }).catch(err => {
-      reject(err);
-    });
-  })
-
-}
-
-function hgetall(key){
-  return new Promise((resolve, reject) => {
-    initRedis().then(client => {
-      client.hgetall(key, (err, obj) => {
-        if(err) {
-          console.log(err);      
-          reject(err);
-        }
-        else {
-          //console.log(obj);
-          resolve(obj);
-        }
-      });
-    }).catch(err => {
-      reject(err);
-    });
-  });
-}
-
-async function getRandomData(key){
-  let cacheData = await hgetall(key);
-  
-  cacheData.expire = parseInt(cacheData.expire) - 1;
-  if(cacheData.expire > 0){
-    initRedis().then(client => {
-      client.hmset(key, 'expire', cacheData.expire.toString());
-    });
+async function redisGet(key) {
+  client = await initRedis();
+  try {
+    result = await client.get(key);
+    return JSON.parse(reply);
   }
-  cacheData.data = JSON.parse(cacheData.data);
-  
-  return cacheData;
+  catch(err) {
+    throw err;
+  }
+}
+
+async function redisSet(key, str) {
+  client = await initRedis();
+  try {
+    result = await client.set(key, JSON.stringify(str));
+    return result;
+  }
+  catch(err) {
+    throw err;
+  }
+
+}
+
+async function hmset(key, obj){
+  client = await initRedis();
+  try {
+    result = await client.hmset(key, obj);
+    return result;
+  }
+  catch(err) {
+    throw err;
+  }
+
+}
+
+async function hgetall(key){
+  client = await initRedis();
+  try {
+    result = await client.hgetall(key);
+    return result;
+  }
+  catch(err) {
+    throw err;
+  }
 }
 
 exports.get = redisGet;
@@ -141,5 +97,3 @@ exports.set = redisSet;
 exports.hmset = hmset;
 exports.hgetall = hgetall;
 exports.initRedis = initRedis;
-
-exports.getRandomData = getRandomData;

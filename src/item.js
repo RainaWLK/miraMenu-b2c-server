@@ -6,7 +6,7 @@ let I18n = require('./i18n.js');
 let _ = require('lodash');
 //let S3 = require('./s3');
 let filter = require('./filter.js');
-const counter = require('./counter.js');
+const ranker = require('./counter.js');
 
 const BRANCH_TABLE_NAME = "BranchesB2C";
 const MENU_TABLE_NAME = "MenusB2C";
@@ -168,7 +168,7 @@ class Items {
     try {
       let itemData = await this.getMenuItem();
       //statistic
-      itemData.counter = await counter.incr(this.item_fullID);
+      itemData.counter = await ranker.incr(this.item_fullID);
 
       let output = this.output(itemData, this.item_fullID);
       return JSONAPI.makeJSONAPI(TYPE_NAME, output);

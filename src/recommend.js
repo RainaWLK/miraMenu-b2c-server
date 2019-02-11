@@ -273,10 +273,14 @@ class Recommend {
     if((isNaN(page))||(page < 0)){
       page = 0;
     }
+    let period = parseInt(this.reqData.queryString.period, 10);
+    if((isNaN(period))||(period < 0)||(period > 31)){
+      period = 7;
+    }    
     let from = page * quantity;
 
     try {
-      let rankList = await ranker.getRankList(from, quantity);  //[menuItemid, counter]
+      let rankList = await ranker.getRankList(from, quantity, period);  //[menuItemid, counter]
 
       //??????
       let ids = rankList.map(itemSet => itemSet[0]);

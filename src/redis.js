@@ -17,7 +17,8 @@ function initRedis(){
     conn = redis.createClient({
       //host: 'dbcache.osilv8.0001.usw2.cache.amazonaws.com',
       host: 'redis-nlb-2f8d80dd530ed344.elb.us-west-2.amazonaws.com',
-      port: '6379'
+      port: '6379',
+      password: 'neogeekS123456'
     });
     
     conn.on("error", function (err) {

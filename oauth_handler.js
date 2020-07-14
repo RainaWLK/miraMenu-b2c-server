@@ -12,8 +12,8 @@ export const main = async (event, context, callback) => {
   const code = event.queryStringParameters.code;
 
   let params = {
-    'client_id': '167755153886-o7qrcglr58l7vakh8sr0iqn2ua9gg52a.apps.googleusercontent.com',
-    'client_secret': 'oET6EHvVOi9txio9IOanlPP8',
+    'client_id': 'xxxx',
+    'client_secret': 'xxxx',
     'redirect_uri': 'https://mtehiov913.execute-api.us-east-1.amazonaws.com/dev/oauth2callback',
     'grant_type': 'authorization_code',
     'code': code

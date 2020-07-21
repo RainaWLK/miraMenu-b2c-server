@@ -27,7 +27,7 @@
     "cors": "^2.8.4",
     "elasticsearch": "^14.2.1",
     "express": "^4.16.2",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.19",
     "moment": "^2.24.0",
     "query-string": "^5.0.0",
     "redis": "^2.8.0",

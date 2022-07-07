@@ -28,7 +28,7 @@
     "elasticsearch": "^14.2.1",
     "express": "^4.16.2",
     "lodash": "^4.17.11",
-    "moment": "^2.24.0",
+    "moment": "^2.29.4",
     "query-string": "^5.0.0",
     "redis": "^2.8.0",
     "winston": "^2.4.4"
